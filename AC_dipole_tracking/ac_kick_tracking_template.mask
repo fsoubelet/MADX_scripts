@@ -1,0 +1,313 @@
+!###############################################################################################
+!############################## Create soft links and directories ##############################
+!###############################################################################################
+
+system, "rm -r Outputdata";
+system, "mkdir Outputdata";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/V6.503 db5";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/SLHCV1.0 slhc";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/V6.503/FiDeL fidel";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/V6.503/WISE wise";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/runII/2016 optics2016";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/runII/2017 optics2017";
+system, "ln -fns /afs/cern.ch/eng/lhc/optics/runII/2018 optics2018";
+system, "ln -fns /afs/cern.ch/work/f/fesoubel/public/MADX_scripts/mihofer_scripts scripts";
+
+
+!#############################################################################
+!############################## Tune and chroma ##############################
+!#############################################################################
+
+! Tune definitions used in some of the later macros
+qx0 = 62.26;
+qy0 = 60.32;
+tsplit = 2.0;
+qx00 = 62.0;
+qy00 = 60.0;
+qprime = 2.0;
+
+qxinit = qx0;
+qyinit = qy0;
+qxfinal = 62.31; ! Define initial qxinit / qyinit with larger separation for robustness to large coupling errors as sources are introduced (want to avoid getting stuck on the wrong side of qx=qy)
+qyfinal = 60.32; ! Then rematch to desired final tunes at the very end of the script. qx0 etc are kept with the init values for coupling routines etc.
+
+ptcqxinit = qxinit - qx00;
+ptcqyinit = qyinit - qy00;
+qxinitint = qxinit - ptcqxinit;
+qyinitint = qyinit - ptcqyinit;
+
+dqxinit = qprime;
+dqyinit = qprime;
+dqxfinal = qprime;
+dqyfinal = qprime;
+
+! DO NOT FORGET TO SET THOSE VALUES
+DeltaQx = -0.01;
+DeltaQy = 0.012;
+
+! VALUE OF THE LINEAR COUPLING KNOBS TO BE APPLIED AT THE END OF THE MASK
+!couplre = 0.003;
+!couplim = -0.001;
+
+
+!#####################################################################
+!############################## Options ##############################
+!#####################################################################
+
+mylhcbeam = 1; ! Always set to one as this script is only adapted for Beam 1 2018
+is_thin = 1;
+
+MOpowering = 0.0;
+
+targetorbit =1; ! flag TO MATCH ORBIT USING VIRTUAL CORRECTORS - in practice need this if using any alignment errors
+zeroorbit = 1; ! flag to match orbit to zero instead of a target file
+orbittol = 1e-9; ! Tolerance on orbit matching. ! Something small eg 1e-9 is decent for matching to zero or to target. Can increase if want to have qualitative reproduction of RMS using old routines.
+
+
+!################################################################################
+!############################## Setting up lattice ##############################
+!################################################################################
+
+! Slicing for tracking
+call, file="optics2018/lhc_as-built.seq";
+if(is_thin==1) {
+    slicefactor=8;
+    beam;
+	call, file="optics2018/toolkit/myslice.madx";
+	beam;
+	use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+	use, sequence=lhcb2; makethin, sequence=lhcb2, style=teapot, makedipedge=true;
+};
+
+
+! ============================= !
+! Installation of the AC Dipole !
+! ============================= !
+
+! Will be at 0 from turn 0 to 'ramp1', then goes up until max strength at 'ramp2', stays at max strength until 'ramp3', and finally goes down to 0 at 'ramp4' where it will stay until end of tracking.
+! Takes 2000 turns to ramp up AC Dipole (needed to preserve adiabaticity)
+! If you don't let the AC dipole ramp down adiabatically Drive will cry and say 'NO KICK FOUND'.
+! Usually 6600 turns of AC dipole 'flat-top' in the LHC, better to reproduce this.
+MKACH.6L4.B1: hacdipole, l=0, freq:=Qxd, lag=0, volt:=voltx, ramp1=100, ramp2=2100, ramp3=8700, ramp4=10700;
+MKACV.6L4.B1: vacdipole, l=0, freq:=Qyd, lag=0, volt:=volty, ramp1=100, ramp2=2100, ramp3=8700, ramp4=10700;
+
+! It's not a specific element, it's repurposing an element since it's the same magnet in LHC that is used to do fast kick / AC dipole/ etc
+seqedit, sequence=lhcb1; flatten;
+install, element=MKACH.6L4.B1, at=0.0, from=MKQA.6L4.B1;
+install, element=MKACV.6L4.B1, at=0.0, from=MKQA.6L4.B1;
+endedit;
+
+
+! Cycling w.r.t. to IP3: if we put errors in the script, we cycle from/to point 3 so that MADX
+! has an easier time finding the orbit. It's just easier for MAD than to start at IP1 / IP5
+seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
+
+
+! These are optics that correspond to different configs / betastar (inj / flattop...).
+! There are hardcoded 'knobs' in those files that do coupling / tune shift / chromaticity/ etc.
+! There is a README file in optics2018 with more info, see there.
+! => opticsfile.22 is with betastar 30cm at IP1 and IP5
+if(is_thin==0) { call, file="optics2018/PROTON/opticsfile.22"; }
+else           { call, file="optics2018/PROTON/opticsfile.22"; }
+
+
+! =============================================================== !
+! Define energy again since it's set to 6.5TeV in the opticsfiles !
+! =============================================================== !
+
+NRJ = 6500;
+brho := NRJ * 1e9 / clight;
+normemit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
+value, NRJ;
+value, brho;
+value, normemit;
+
+beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=normemit, ey=normemit;
+use, sequence=lhcb1;
+
+
+!#######################################################################################################
+!############################### Setup for orbit and error corrections #################################
+!###### Xing scheme should be disabled at start to simplify inclusion of errors/alignments/orbit #######
+!#######################################################################################################
+
+on_x1 = 0; on_sep1 = 0; on_o1 = 0;
+on_x2 = 0; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0 ;
+on_x5 = 0; on_sep5 = 0; on_o5 = 0;
+on_x8 = 0; on_sep8 = 0; on_o8 = 0; on_a8 = 0;  on_sep8h = 0; on_x8v = 0;
+
+on_alice = 0;
+on_sol_alice = 0;
+on_lhcb = 0;
+on_sol_atlas = 0;
+on_sol_cms = 0;
+
+
+!##############################################################################################
+!################################ Orbit/Coupling/Tune matching ################################
+!##############################################################################################
+
+! ============================================================ !
+!                   Matching Tune and Chroma                   !
+! ============================================================ !
+
+match;
+  global, q1=qxfinal, q2=qyfinal;
+  vary, name=dQx.b1, step=1.0E-7;
+  vary, name=dQy.b1, step=1.0E-7;
+  lmdif, calls=1000, tolerance=1.0E-21;
+endmatch;
+
+match, chrom;
+  global, dq1=dqxfinal, dq2=dqyfinal;
+  vary, name=dQpx.b1, step=1.0E-7;
+  vary, name=dQpy.b1, step=1.0E-7;
+  lmdif, calls=1000, tolerance=1.0E-21;
+endmatch;
+
+
+!#########################################
+!########## Final Twiss and PTC ##########
+!#########################################
+
+select, flag=twiss, clear;
+select, flag=twiss, pattern=M, column=name, s, betx, bety, x, y;
+twiss, chrom, file="Outputdata/twiss_elements_final.tfs";
+
+
+!##################################################################################
+!################################ Pass to SixTrack ################################
+!##################################################################################
+
+select, flag=twiss, clear;
+select, flag=twiss, class=monitor;
+twiss, chrom, file="Outputdata/twiss_bpms_final.tfs", range="#S/#E";
+
+!PLOT, HAXIS= S, VAXIS=BETX, BETY, range= #S/#E, COLOUR= 100, NOVERSION=TRUE;
+!PLOT, HAXIS= S, VAXIS=X, Y, range=#S/#E, COLOUR= 100, NOVERSION=TRUE;
+!PLOT, HAXIS= S, VAXIS=DX, DY, range=#S/#E, COLOUR= 100, NOVERSION=TRUE;
+
+if (NRJ<4999.9999) { VRF400 := 8.0; LAGRF400.B1 = 0.5; LAGRF400.B2 = 0.; };
+if (NRJ>5000.0000) { VRF400 := 16.; LAGRF400.B1 = 0.5; LAGRF400.B2 = 0.; };
+twiss;
+
+VALUE, QX0, QY0;
+
+ptc_create_universe;
+ptc_create_layout, model=3, method=6, nst=3;
+ptc_align;
+
+select_ptc_normal, q1=0, q2=0;
+select_ptc_normal, dq1=1, dq2=1; ! First order chromaticities (dQ1/ddeltap^1)
+select_ptc_normal, dq1=2, dq2=2; ! Second order chromaticities (dQ1/ddeltap^2)
+select_ptc_normal, dq1=3, dq2=3; ! Third order chromaticities (dQ1/ddeltap^3)
+select_ptc_normal, anhx=1,0,0; ! dQx / d2Jx
+select_ptc_normal, anhy=0,1,0; ! dQy / d2Jy
+select_ptc_normal, anhx=0,1,0; ! dQx / d2Jy
+select_ptc_normal, anhy=1,0,0; ! dQy / d2Jx
+select_ptc_normal, anhx=2,0,0; ! d^2Qx / d2Jx^2
+select_ptc_normal, anhx=1,1,0; ! d^2Qx / d2Jxd2Jy
+select_ptc_normal, anhx=0,2,0; ! d^2Qx / d2Jy^2
+select_ptc_normal, anhy=0,2,0; ! dˆ2Qy / d2Jy^2
+select_ptc_normal, anhy=1,1,0; ! d^2Qy / d2Jxd2Jy
+select_ptc_normal, anhy=2,0,0; ! d^2Qy / d2Jx^2
+ptc_normal, closed_orbit, normal, icase=5, no=5;
+write, table=normal_results, file="Outputdata/ptc_normal_anharmonicities.tfs";
+ptc_end;
+
+Qx0 = table(summ,Q1);
+Qy0 = table(summ,Q2);
+Qx = Qx0 - qx00;
+Qy = Qy0 - qy00;
+
+
+!################################################
+!########## Perform AC dipole tracking ##########
+!################################################
+
+! ========================== !
+! Setting the AC Dipole tune !
+! ========================== !
+
+! AC Dipole driven tunes
+Qxd = Qx + DeltaQx;
+Qyd = Qy + DeltaQy;
+
+! Need beta function at AC dipole to set proper strength
+twiss;
+betxac = table(twiss, MKQA.6L4.B1, betx);
+betyac = table(twiss, MKQA.6L4.B1, bety);
+
+
+! ====================================== !
+! If you run this through job_submitter !
+! ====================================== !
+
+! This is a linear approximation - ok if emittance is defined and nonlinearities aren't too strong.
+! If you drive to too high amplitudes, you should do fft on first turn to get the real amplitude.
+
+! Sigma is normalized so that we have this excitation amplitude through the machine (give it through madx_submitter)
+!voltx = %(SIGMAX)s * SQRT(normemit) * brho * ABS(DeltaQx) * 4 * PI / SQRT(betxac);
+!volty = %(SIGMAY)s * SQRT(normemit) * brho * ABS(DeltaQy) * 4 * PI / SQRT(betyac);
+
+
+! ====================================== !
+! If you run this without job_submitter !
+! ====================================== !
+
+! Sigma is normalized so that we have this excitation amplitude through the machine (give it through madx_submitter)
+SIGMAX = %(SIGMAX_VALUE)s;
+SIGMAY = %(SIGMAY_VALUE)s;
+value, SIGMAX, SIGMAY;
+
+AMPX = %(AMPLX_VALUE)s;
+AMPY = %(AMPLY_VALUE)s;
+value, AMPX, AMPY;
+
+! This is a linear approximation - ok if emittance is defined and nonlinearities aren't too strong.
+! If you drive to too high amplitudes, you should do fft on first turn to get the real amplitude.
+voltx = SIGMAX * SQRT(normemit) * brho * ABS(DeltaQx) * 4 * PI / SQRT(betxac);
+volty = SIGMAY * SQRT(normemit) * brho * ABS(DeltaQy) * 4 * PI / SQRT(betyac);
+value, voltx, volty;
+
+select, flag=twiss, clear;
+select, flag=twiss, pattern="MKQA", column=name, s, x, y, px, py, betx, bety;
+twiss, chrom, file="Outputdata/MKQA.tfs";
+
+Qx0 = table(summ, Q1);
+Qy0 = table(summ, Q2);
+
+select, flag=twiss, clear;
+select, flag=twiss, pattern=BPM, column=name, s, mux, muy, betx, bety, K0L, K0SL, K1L, K1SL, K2L, K2SL, K3L, K3SL, K4L, K4SL, K5L, K5SL;
+twiss, chrom, file="Outputdata/multipolar_terms_for_rdts.tfs";
+
+
+! ========================== !
+! Do tracking with AC Dipole !
+! ========================== !
+
+! Calling this file to load macro defining BPMs observation points for tracking
+call, file="/afs/cern.ch/eng/sl/lintrack/Beta-Beat.src/madx/lib/lhc_runII.macros.madx";
+
+! Tracking routine, will output file named "trackone"
+TRACK, file=track, RECLOSS, ONEPASS=True, DUMP=True, ONETABLE=TRUE; ! ONETABLE puts observation from all points in the same file (instead of one file per obs pt)
+START, FX=AMPX, FY=AMPY, PHIX=0.0, PHIY=0.0;
+exec, define_madx_observation_points(); ! define "all" BPMs as observation points, some names are outdated
+RUN, TURNS=10800;
+ENDTRACK;
+
+! If a particle goes above a certain amplitude, it is considered lost.
+! Lost particles will be logged in this file.
+! The max aperture before loss can be set in the RUN command (?).
+write, table=trackloss, file="Outputdata/trackloss.tfs";
+
+
+system,"mv fort.18 Outputdata/";
+system,"unlink db5";
+system,"unlink slhc";
+system,"unlink fidel";
+system,"unlink wise";
+system,"unlink optics2016";
+system,"unlink optics2017";
+system,"unlink optics2018";
+system,"unlink scripts";
