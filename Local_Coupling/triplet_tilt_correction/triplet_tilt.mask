@@ -96,33 +96,39 @@ use, sequence=lhcb1;
 KQSX3.R1_old = KQSX3.R1;
 KQSX3.L1_old = KQSX3.L1;
 
-! Implement a tilt error for Q1 (doing at left of IP1)
+! Implement a tilt error for Q1 (right & left of IP1)
 tilt_angle = %(TILT_ERROR)s;
 select, flag=error, pattern="MQXA.1L1";
-!EALIGN, DPSI=tilt_angle;
+!EALIGN, DPSI=tilt_angle;  ! for afs / htcondor
 EALIGN, DPSI=1E-3;
 
+select, flag=error, pattern="MQXA.1R1";
+!EALIGN, DPSI=-1*tilt_angle;  ! for afs / htcondor
+EALIGN, DPSI=-1E-3;
+
 ! Matching with skewquads correctors to erase coupling at IP1
-MATCH, SEQUENCE = lhcb1;
-  VARY, NAME=KQSX3.R1;
-  VARY, NAME=KQSX3.L1;
-  CONSTRAINT, RANGE="IP1", R11=0;
-  CONSTRAINT, RANGE="IP1", R12=0;
+match, sequence = lhcb1;
+  vary, NAME=KQSX3.R1;
+  vary, NAME=KQSX3.L1;
+  constraint, RANGE="IP1", R11=0;
+  constraint, RANGE="IP1", R12=0;
+  constraint, RANGE="IP1", R21=0;  ! might not necessarily be needed
+  constraint, RANGE="IP1", R22=0;  ! might not necessarily be needed
   LMDIF, CALLS=5000, TOLERANCE=1E-22;
   JACOBIAN, CALLS=1000, TOLERANCE=1E-21;
-ENDMATCH;
+endmatch;
 
 ! Matching with skewquads correctors to erase coupling at IP1
-MATCH, SEQUENCE = lhcb1;
-  VARY, NAME=KQSX3.R1;
-  VARY, NAME=KQSX3.L1;
-  CONSTRAINT, RANGE="IP1", R11=0;
-  CONSTRAINT, RANGE="IP1", R12=0;
-  CONSTRAINT, RANGE="IP1", R21=0;  ! might not necessarily be needed
-  CONSTRAINT, RANGE="IP1", R22=0;  ! might not necessarily be needed
+! Second Jacobian call for additional convergence
+match, sequence = lhcb1;
+  vary, NAME=KQSX3.R1;
+  vary, NAME=KQSX3.L1;
+  constraint, RANGE="IP1", R11=0;
+  constraint, RANGE="IP1", R12=0;
+  constraint, RANGE="IP1", R21=0;  ! might not necessarily be needed
+  constraint, RANGE="IP1", R22=0;  ! might not necessarily be needed
   JACOBIAN, CALLS=1000, TOLERANCE=1E-21;
-ENDMATCH;
-
+endmatch;
 
 ! Match Tunes and Chromaticity to compensate the second order contribution of coupling (bump might not be closed)
 match, chrom;
@@ -140,7 +146,7 @@ select, flag=twiss, clear;
 select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 select, flag=twiss, pattern="MQXA", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-twiss, file="%(TWISS_OUTPUT_FILE)s", ripken=True;
+twiss, file="triplet_tilt_coupling_corr.tfs", ripken=True;
 !twiss, file="Outputdata/triplet_tilt_coupling_corr.tfs", ripken=True;  ! for afs / htcondor
 
 ! ========================== !
@@ -154,32 +160,32 @@ qymid = qy00 + qfmid;
 value, qfmid, qxmid, qymid;
 
 ! Save previous values
-dQx.b1_init=dQx.b1;
-dQy.b1_init=dQy.b1;
+dQx.b1_init = dQx.b1;
+dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, q1=62.295, q2=60.295;
-  vary,   name=dQx.b1, step=1.0E-7 ;
-  vary,   name=dQy.b1, step=1.0E-7 ;
-  LMDIF,  calls=100, tolerance=1.0E-21;
+  global, Q1=62.295, Q2=60.295;
+  vary, name=dQx.b1, step=1.0E-7;
+  vary, name=dQy.b1, step=1.0E-7;
+  LMDIF, calls=100, tolerance=1.0E-21;
 endmatch;
 
 ! Put back the previous values
-dQx.b1=dQx.b1_init;
-dQy.b1=dQy.b1_init;
+dQx.b1 = dQx.b1_init;
+dQy.b1 = dQy.b1_init;
 
 ! Value of the Cminus
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
 twiss;
 
-! ========================== !
-!  Output Values for Scripts !
-! ========================== !
+! ============================================= !
+!  Output Interesting Values for Python Scripts !
+! ============================================= !
 
 value, tilt_angle;
-value, KQSX3.R1;
-value, KQSX3.L1;
-value, dqminacorr;
+value, KQSX3.R1;  ! skewquad corrector powering
+value, KQSX3.L1;  ! skewquad corrector powering
+value, dqminacorr;  ! resulting cminus after correction
 
 system, "unlink scripts";
