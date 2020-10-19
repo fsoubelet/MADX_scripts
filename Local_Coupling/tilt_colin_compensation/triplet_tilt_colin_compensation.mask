@@ -118,6 +118,20 @@ colinearity_knob = %(COLIN_KNOB)s;  ! In units of the colin knob (positive integ
 KQSX3.R1 = colinearity_knob * 1E-4;
 KQSX3.L1 = - colinearity_knob * 1E-4;
 
+! ===================================== !
+!  Implement Rigidity Waist Shift Knob  !
+! ===================================== !
+
+! Save current value of triplets powering
+kqx.l1_old = kqx.l1;
+kqx.r1_old = kqx.r1;
+
+! Change Triplets powering for waist shift
+rigidity_waist_shift_knob = %(RIGIDITY_WAIST_SHIFT_KNOB)s;  ! In units of the rigidity waist shift knob (positive integers only)
+kqx.l1 = (1 + rigidity_waist_shift_knob *.005) * kqx.l1_old;
+kqx.r1 = (1 - rigidity_waist_shift_knob *.005) * kqx.r1_old;
+
+
 ! Match Tunes and Chromaticity to compensate the second order contribution of coupling (bump might not be closed)
 match, chrom;
   global, Q1=qx0, Q2=qy0;
