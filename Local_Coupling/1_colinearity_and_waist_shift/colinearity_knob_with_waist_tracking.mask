@@ -209,6 +209,5 @@ value, colinearity_knob;
 value, rigidity_waist_shift_knob;
 value, dqminacorr;
 
-system, "for file in track.obs0001.*, do rm -rf $file; done";  ! obs0001 is start of machine for PTC, so IP3 here
-system, "for file in track*; do mv -f $file Outputdata/; done";  ! only obs002 left which is IP1
+system, "for file in track.obs0002.*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP3 here, obs002 is IP1, only those go to htcondor's kept outputs
 system, "unlink scripts";
