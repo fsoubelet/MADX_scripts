@@ -128,8 +128,7 @@ endmatch;
 
 ! Twiss results to output file
 select, flag=twiss, clear;
-select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+select, flag=twiss, pattern="IP", column=name, s, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 twiss, file="Outputdata/colin_waist_dqmin.tfs", ripken=True;
 
 ! ========================== !
@@ -169,11 +168,11 @@ ptc_create_universe;
 ptc_create_layout, model=3, method=4, nst=3;
 PTC_ALIGN;
 SELECT, flag=ptc_twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-ptc_twiss, closed_orbit=true, no=6, icase=5, file="ptc_twiss.tfs";
+ptc_twiss, closed_orbit=true, no=6, icase=5, file="Outputdata/ptc_twiss.tfs";
 
-! Initiate 9000 particles
+! Initiate 1000 particles
 n = 1;
-while (n<=9000) {
+while (n<=1000) {
   ! Creating particle distribution relatively to 5 sigma
   Nsigmax = tgauss(5);
   Nsigmay = tgauss(5);
@@ -210,4 +209,6 @@ value, colinearity_knob;
 value, rigidity_waist_shift_knob;
 value, dqminacorr;
 
+system, "for file in track.obs0001.*, do rm -rf $file; done";  ! obs0001 is start of machine for PTC, so IP3 here
+system, "for file in track*; do mv -f $file Outputdata/; done";  ! only obs002 left which is IP1
 system, "unlink scripts";
