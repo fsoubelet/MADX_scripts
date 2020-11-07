@@ -170,9 +170,9 @@ PTC_ALIGN;
 SELECT, flag=ptc_twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 ptc_twiss, closed_orbit=true, no=6, icase=5, file="Outputdata/ptc_twiss.tfs";
 
-! Initiate 1000 particles
+! Initiate 1500 particles
 n = 1;
-while (n<=1000) {
+while (n<=1500) {
   ! Creating particle distribution relatively to 5 sigma
   Nsigmax = tgauss(5);
   Nsigmay = tgauss(5);
@@ -209,5 +209,5 @@ value, colinearity_knob;
 value, rigidity_waist_shift_knob;
 value, dqminacorr;
 
-system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP3 here, obs002 is IP1, only those go to htcondor's kept outputs
+system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP3 here, obs002 is IP1. Move to htcondor's kept outputs
 system, "unlink scripts";
