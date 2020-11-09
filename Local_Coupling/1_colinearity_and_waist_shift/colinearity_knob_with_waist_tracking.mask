@@ -43,8 +43,8 @@ beam;
 
 use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
-! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
-seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
+! Cycling w.r.t. to IP5 (that we want to compare to IP1 which is affected by local coupling)
+seqedit, sequence=lhcb1; flatten; cycle, start=IP5; endedit;
 use, sequence=lhcb1;
 
 !=> opticsfile.22 is with betastar 30cm at IP1 and IP5
@@ -173,7 +173,8 @@ ptc_twiss, closed_orbit=true, no=6, icase=5, file="Outputdata/ptc_twiss.tfs";
 ! Initiate 1500 particles
 n = 1;
 while (n<=1500) {
-  ! Creating particle distribution relatively to 5 sigma
+  ! Creating Gaussian particle distribution up to 5 sigma
+  ! Careful that this routine was meant to start at a place with alpha=0
   Nsigmax = tgauss(5);
   Nsigmay = tgauss(5);
   Nsigmapx = tgauss(5);
@@ -181,23 +182,23 @@ while (n<=1500) {
   phasex = RANF()*2*PI;
   phasey = RANF()*2*PI;
 
-  ! Insert beta values at start of tracking, here IP1
-  betxip1 = 0.3;
-  betyip1 = 0.3;
+  ! Insert beta values at start of tracking, here IP5
+  betxip5 = 0.3;
+  betyip5 = 0.3;
 
   ! Initialise phase space coordinates
-  myx = sqrt(betxip1) * Nsigmax*sqrt(normemit);
-  myy = sqrt(betyip1) * Nsigmay*sqrt(normemit);
-  mypx = Nsigmapx * sqrt(normemit) / sqrt(betxip1);
-  mypy = Nsigmapy * sqrt(normemit) / sqrt(betyip1);
+  myx = sqrt(betxip5) * Nsigmax*sqrt(normemit);
+  myy = sqrt(betyip5) * Nsigmay*sqrt(normemit);
+  mypx = Nsigmapx * sqrt(normemit) / sqrt(betxip5);
+  mypy = Nsigmapy * sqrt(normemit) / sqrt(betyip5);
 
   ptc_start, x=myx, px=mypx, y=myy, py=mypy;
   n = n + 1;
 };
 
-! Perform tracking and observe at IP1
+! Perform tracking and observe at IP5 (start of machine) and IP1
 ptc_observe, place=ip1;
-ptc_track, icase=5, closed_orbit, dump, turns=10, norm_no=5, element_by_element;
+ptc_track, icase=5, closed_orbit, dump, turns=50, norm_no=5, element_by_element;
 ptc_track_end;
 ptc_end;
 
@@ -209,5 +210,5 @@ value, colinearity_knob;
 value, rigidity_waist_shift_knob;
 value, dqminacorr;
 
-system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP3 here, obs002 is IP1. Move to htcondor's kept outputs
+system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP5 here, obs002 is IP1. Move to htcondor's kept outputs
 system, "unlink scripts";
