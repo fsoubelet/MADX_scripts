@@ -185,7 +185,7 @@ i = 1;
 while (i < 1500) {
   setvars, table=mydist, row=i;
   value, i, x, py;
-  track, ONEPASS=true, file="Outputdata/tracking_output";!, onetable;
+  track, ONEPASS=true, file="Outputdata/track";!, onetable;
   start, x=x, px=px, y=y, py=py, t=t, pt=pt;
   i = i+1;
 }
