@@ -29,6 +29,10 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
+vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
+lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi 
+lagrf400.b2 = 0;
+
 
 !#############################################################################
 !############################# Setting Up Lattice ############################
@@ -69,10 +73,10 @@ on_sol_cms = 0;
 
 NRJ = 6500;
 brho := NRJ * 1e9 / clight;
-normemit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
+geometric_emit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
 
 ! Set up beam
-beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=normemit, ey=normemit;
+beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=geometric_emit, ey=geometric_emit;
 use, sequence=lhcb1;
 
 ! Match Tunes and Chromaticity
@@ -161,6 +165,12 @@ dQy.b1=dQy.b1_init;
 ! Value of the Cminus
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
 twiss;
+
+! ====================================================== !
+!  Save sequence to external file for use in sixtracklib !
+! ====================================================== !
+
+save, sequence=lhcb1, beam=true, file="Outputdata/lhc_colin_track.seq";
 
 ! ============================================= !
 !  Output Interesting Values for Python Scripts !

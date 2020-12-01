@@ -29,6 +29,9 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
+vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
+lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
+lagrf400.b2 = 0;
 
 !#############################################################################
 !############################# Setting Up Lattice ############################
@@ -69,10 +72,10 @@ on_sol_cms = 0;
 
 NRJ = 6500;
 brho := NRJ * 1e9 / clight;
-normemit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
+geometric_emit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
 
 ! Set up beam
-beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=normemit, ey=normemit;
+beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=geometric_emit, ey=geometric_emit;
 use, sequence=lhcb1;
 
 ! Match Tunes and Chromaticity
@@ -170,10 +173,12 @@ PTC_ALIGN;
 SELECT, flag=ptc_twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 ptc_twiss, closed_orbit=true, no=6, icase=5, file="Outputdata/ptc_twiss.tfs";
 
+stop;
+
 ! Initiate 1500 particles
 n = 1;
 while (n<=1500) {
-  ! Creating Gaussian particle distribution up to 5 sigma
+! Creating Gaussian particle distribution up to 5 sigma
   ! Careful that this routine was meant to start at a place with alpha=0
   Nsigmax = tgauss(5);
   Nsigmay = tgauss(5);
@@ -187,10 +192,10 @@ while (n<=1500) {
   betyip5 = 0.3;
 
   ! Initialise phase space coordinates
-  myx = sqrt(betxip5) * Nsigmax*sqrt(normemit);
-  myy = sqrt(betyip5) * Nsigmay*sqrt(normemit);
-  mypx = Nsigmapx * sqrt(normemit) / sqrt(betxip5);
-  mypy = Nsigmapy * sqrt(normemit) / sqrt(betyip5);
+  myx = sqrt(betxip5) * Nsigmax*sqrt(geometric_emit);
+  myy = sqrt(betyip5) * Nsigmay*sqrt(geometric_emit);
+  mypx = Nsigmapx * sqrt(geometric_emit) / sqrt(betxip5);
+  mypy = Nsigmapy * sqrt(geometric_emit) / sqrt(betyip5);
 
   ptc_start, x=myx, px=mypx, y=myy, py=mypy;
   n = n + 1;
@@ -198,6 +203,7 @@ while (n<=1500) {
 
 ! Perform tracking and observe at IP5 (start of machine) and IP1
 ptc_observe, place=ip1;
+!ptc_track, icase=4, closed_orbit, dump, turns=50, norm_no=5, element_by_element;
 ptc_track, icase=5, closed_orbit, dump, turns=50, norm_no=5, element_by_element;
 ptc_track_end;
 ptc_end;
