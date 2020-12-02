@@ -29,9 +29,9 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
-vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
-lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
-lagrf400.b2 = 0;
+!vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
+!lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
+!lagrf400.b2 = 0;
 
 !#############################################################################
 !############################# Setting Up Lattice ############################
@@ -176,16 +176,17 @@ dQy.b1=dQy.b1_init;
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
 twiss;
 
+
 ! =============================== !
 !  Particle distribution tracking !
 ! =============================== !
 
 ! Initiate 1500 particles
 i = 1;
-while (i < 1500) {
+while (i < 2) {
   setvars, table=mydist, row=i;
   value, i, x, py;
-  track, ONEPASS=true, file="Outputdata/track";!, onetable;
+  track, ONEPASS=false, file="Outputdata/track";!, onetable;
   start, x=x, px=px, y=y, py=py, t=t, pt=pt;
   i = i+1;
 }
@@ -202,5 +203,4 @@ value, colinearity_knob;
 value, rigidity_waist_shift_knob;
 value, dqminacorr;
 
-!system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP5 here, obs002 is IP1. Move to htcondor's kept outputs
 system, "unlink scripts";
