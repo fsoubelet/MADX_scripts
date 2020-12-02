@@ -101,7 +101,7 @@ select, flag=twiss, pattern="IP";
 twiss, file="Outputdata/twiss_for_distribution.tfs";
 
 ! Create this here BEFORE affecting things by applying the knob, will be used to initialize particles for tracking
-DISTRIBUTION,  horizontal=gauss, vertical=gauss, longitudinal=zero, table=mydist, npart = 100000, cutsig_h={0,5}, cutsig_v={0,5};
+DISTRIBUTION,  horizontal=gauss, vertical=gauss, longitudinal=zero, table=mydist, npart = 100000, cutsig_h={0,3}, cutsig_v={0,3};
 write, table=mydist, file="Outputdata/distribution.tfs";  ! should write for any case!
 
 ! ============================ !
