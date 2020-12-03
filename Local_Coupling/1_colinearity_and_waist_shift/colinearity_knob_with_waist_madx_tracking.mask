@@ -181,9 +181,9 @@ twiss;
 !  Particle distribution tracking !
 ! =============================== !
 
-! Initiate 1500 particles
+! Initiate 1000 particles
 i = 1;
-while (i < 2) {
+while (i < 1000) {
   setvars, table=mydist, row=i;
   value, i, x, py;
   track, ONEPASS=false, file="Outputdata/track";!, onetable;
