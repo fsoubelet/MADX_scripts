@@ -193,7 +193,7 @@ while (i < 1000) {
 
 ! Set obervation point at IP1 and run tracking
 observe, place=ip1;
-run, turns=1000;
+run, turns=50;
 
 ! ============================================= !
 !  Output Interesting Values for Python Scripts !
