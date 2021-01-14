@@ -1,3 +1,5 @@
+! This reproduces the running end-of-2018 scenario that had issues at IP2 from a colinearity knob wrong setting
+
 option, -echo, -warn;
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
 system, "ln -nfs /afs/cern.ch/work/f/fesoubel/MADX_scripts/Local_Coupling scripts";  ! for afs / htcondor
@@ -51,8 +53,8 @@ use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
-!=> opticsfile.22 is with betastar 30cm at IP1 and IP5
-call, file="scripts/opticsfile.22";
+!=> opticsfile.21 is with betastar 50cm at IP1, IP2 and IP5, the nominal 2018 ion run optics
+call, file="scripts/ion_2018_opticsfile.21";
 
 
 !#######################################################################################################
@@ -135,8 +137,8 @@ qymid = qy00 + qfmid;
 value, qfmid, qxmid, qymid;
 
 ! Save previous values
-dQx.b1_init=dQx.b1;
-dQy.b1_init=dQy.b1;
+dQx.b1_init = dQx.b1;
+dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
@@ -147,8 +149,8 @@ match;
 endmatch;
 
 ! Put back the previous values
-dQx.b1=dQx.b1_init;
-dQy.b1=dQy.b1_init;
+dQx.b1 = dQx.b1_init;
+dQy.b1 = dQy.b1_init;
 
 ! Value of the Cminus
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
