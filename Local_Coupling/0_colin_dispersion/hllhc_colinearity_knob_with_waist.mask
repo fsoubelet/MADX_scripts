@@ -43,10 +43,10 @@ call, file="scripts/hllhc_sequence.madx";
 slicefactor = 8;
 beam;
 
-call, file="scripts/myslice.madx";
-beam;
+!call, file="scripts/myslice.madx";
+!beam;
 
-use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+!use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
 ! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
 seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
