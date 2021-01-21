@@ -82,13 +82,14 @@ beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1,
 use, sequence=lhcb1;
 
 ! Match Tunes and Chromaticity
+! This is HLLHC so think to change the knobs names! kqt[df].b[12] for tunes, ks[df].b[12] for chroma
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
-  vary, name=dQx.b1_sq;
-  vary, name=dQy.b1_sq;
-  vary, name=dQpx.b1_sq;
-  vary, name=dQpy.b1_sq;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
+  vary, name=ksf.b1, step=1.0E-7;
+  vary, name=ksd.b1, step=1.0E-7;
   LMDIF, calls=100, tolerance=1.0E-21;
 endmatch;
 
@@ -112,10 +113,10 @@ KQSX3.L1 = - colinearity_knob * 1E-4;
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
-  vary, name=dQx.b1_sq;
-  vary, name=dQy.b1_sq;
-  vary, name=dQpx.b1_sq;
-  vary, name=dQpy.b1_sq;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
+  vary, name=ksf.b1, step=1.0E-7;
+  vary, name=ksd.b1, step=1.0E-7;
   LMDIF, calls=100, tolerance=1.0E-21;
 endmatch;
 
@@ -142,8 +143,8 @@ dQy.b1_init = dQy.b1;
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
   global, q1=62.295, q2=60.295;
-  vary,   name=dQx.b1, step=1.0E-7 ;
-  vary,   name=dQy.b1, step=1.0E-7 ;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
   LMDIF,  calls=100, tolerance=1.0E-21;
 endmatch;
 
