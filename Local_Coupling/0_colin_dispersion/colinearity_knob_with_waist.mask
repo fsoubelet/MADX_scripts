@@ -1,6 +1,7 @@
 ! This reproduces the running end-of-2018 scenario that had issues at IP2 from a colinearity knob wrong setting
 
 option, -echo, -warn;
+! see https://github.com/fsoubelet/MADX_scripts
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
 system, "ln -nfs /afs/cern.ch/work/f/fesoubel/MADX_scripts/Local_Coupling scripts";  ! for afs / htcondor
 
@@ -54,7 +55,7 @@ seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
 !=> opticsfile.21 is with betastar 50cm at IP1, IP2 and IP5, the nominal 2018 ion run optics
-call, file="scripts/ion_2018_opticsfile.21";
+call, file="scripts/optics/ion_2018_opticsfile.21";
 
 
 !#######################################################################################################

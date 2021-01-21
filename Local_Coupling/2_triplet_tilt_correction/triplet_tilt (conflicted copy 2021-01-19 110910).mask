@@ -1,5 +1,4 @@
 option, -echo, -warn;
-! see https://github.com/fsoubelet/MADX_scripts
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
 system, "ln -nfs /afs/cern.ch/work/f/fesoubel/MADX_scripts/Local_Coupling scripts";  ! for afs / htcondor
 
@@ -34,7 +33,6 @@ vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
 lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
 lagrf400.b2 = 0;
 
-
 !#############################################################################
 !############################# Setting Up Lattice ############################
 !#############################################################################
@@ -46,15 +44,14 @@ beam;
 call, file="scripts/myslice.madx";
 beam;
 
-use, sequence=lhcb1;
-makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
 ! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
 seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
 !=> opticsfile.22 is with betastar 30cm at IP1 and IP5
-call, file="scripts/optics/opticsfile.22";
+call, file="scripts/opticsfile.22";
 
 
 !#######################################################################################################
@@ -110,32 +107,29 @@ EALIGN, DPSI=tilt_angle;  ! for afs / htcondor
 select, flag=error, pattern="MQXA.1R1";
 EALIGN, DPSI=-1*tilt_angle;  ! for afs / htcondor
 
-! ============================ !
-!  Implement Colinearity Knob  !
-! ============================ !
+! Matching with skewquads correctors to erase coupling at IP1
+match, sequence = lhcb1;
+  vary, NAME=KQSX3.R1;
+  vary, NAME=KQSX3.L1;
+  constraint, RANGE="IP1", R11=0;
+  constraint, RANGE="IP1", R12=0;
+  constraint, RANGE="IP1", R21=0;  ! might not necessarily be needed
+  constraint, RANGE="IP1", R22=0;  ! might not necessarily be needed
+  LMDIF, CALLS=5000, TOLERANCE=1E-22;
+  JACOBIAN, CALLS=1000, TOLERANCE=1E-21;
+endmatch;
 
-! Save strength of MQSX IP coupling correctors
-KQSX3.R1_old = KQSX3.R1;
-KQSX3.L1_old = KQSX3.L1;
-
-! Power MQSX for coupling bump
-colinearity_knob = %(COLIN_KNOB)s;  ! In units of the colin knob (positive integers only)
-KQSX3.R1 = colinearity_knob * 1E-4;
-KQSX3.L1 = - colinearity_knob * 1E-4;
-
-! ===================================== !
-!  Implement Rigidity Waist Shift Knob  !
-! ===================================== !
-
-! Save current value of triplets powering
-kqx.l1_old = kqx.l1;
-kqx.r1_old = kqx.r1;
-
-! Change Triplets powering for waist shift
-rigidity_waist_shift_knob = %(RIGIDITY_WAIST_SHIFT_KNOB)s;  ! In units of the rigidity waist shift knob (positive integers only)
-kqx.l1 = (1 + rigidity_waist_shift_knob *.005) * kqx.l1_old;
-kqx.r1 = (1 - rigidity_waist_shift_knob *.005) * kqx.r1_old;
-
+! Matching with skewquads correctors to erase coupling at IP1
+! Second Jacobian call for additional convergence
+match, sequence = lhcb1;
+  vary, NAME=KQSX3.R1;
+  vary, NAME=KQSX3.L1;
+  constraint, RANGE="IP1", R11=0;
+  constraint, RANGE="IP1", R12=0;
+  constraint, RANGE="IP1", R21=0;  ! might not necessarily be needed
+  constraint, RANGE="IP1", R22=0;  ! might not necessarily be needed
+  JACOBIAN, CALLS=1000, TOLERANCE=1E-21;
+endmatch;
 
 ! Match Tunes and Chromaticity to compensate the second order contribution of coupling (bump might not be closed)
 match, chrom;
@@ -150,11 +144,10 @@ endmatch;
 
 ! Twiss results to output file
 select, flag=twiss, clear;
-!select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!select, flag=twiss, pattern="MQXA", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+select, flag=twiss, pattern="MQXA", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
 select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!twiss, file="triplet_tilt_colin_compensation.tfs", ripken=True;
-twiss, file="Outputdata/triplet_tilt_colin_compensation.tfs", ripken=True;  ! for afs / htcondor
+twiss, file="Outputdata/triplet_tilt_coupling_corr.tfs", ripken=True;  ! for afs / htcondor
 
 ! ========================== !
 !  Get Closest Tune Approach !
@@ -191,7 +184,7 @@ twiss;
 !  Save sequence to external file for use in sixtracklib !
 ! ====================================================== !
 
-save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.seq";
+save, sequence=lhcb1, beam=true, file="Outputdata/lhc_triplet_tilt_track.seq";
 
 
 ! ============================================= !
@@ -199,7 +192,8 @@ save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.se
 ! ============================================= !
 
 value, tilt_angle;
-value, colinearity_knob;
+value, KQSX3.R1;  ! skewquad corrector powering
+value, KQSX3.L1;  ! skewquad corrector powering
 value, dqminacorr;  ! resulting cminus after correction
 
 system, "unlink scripts";

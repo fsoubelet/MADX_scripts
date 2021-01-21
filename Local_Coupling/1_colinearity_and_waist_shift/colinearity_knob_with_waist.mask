@@ -1,4 +1,5 @@
 option, -echo, -warn;
+! see https://github.com/fsoubelet/MADX_scripts
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
 system, "ln -nfs /afs/cern.ch/work/f/fesoubel/MADX_scripts/Local_Coupling scripts";  ! for afs / htcondor
 
@@ -52,7 +53,7 @@ seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
 !=> opticsfile.22 is with betastar 30cm at IP1 and IP5
-call, file="scripts/opticsfile.22";
+call, file="scripts/optics/opticsfile.22";
 
 
 !#######################################################################################################

@@ -1,5 +1,6 @@
+! This reproduces the running end-of-2018 scenario that had issues at IP2 from a colinearity knob wrong setting
+
 option, -echo, -warn;
-! see https://github.com/fsoubelet/MADX_scripts
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
 system, "ln -nfs /afs/cern.ch/work/f/fesoubel/MADX_scripts/Local_Coupling scripts";  ! for afs / htcondor
 
@@ -30,9 +31,9 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
-vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
-lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
-lagrf400.b2 = 0;
+!vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
+!lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi 
+!lagrf400.b2 = 0;
 
 
 !#############################################################################
@@ -46,15 +47,14 @@ beam;
 call, file="scripts/myslice.madx";
 beam;
 
-use, sequence=lhcb1;
-makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
 ! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
 seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
-!=> opticsfile.22 is with betastar 30cm at IP1 and IP5
-call, file="scripts/optics/opticsfile.22";
+!=> opticsfile.21 is with betastar 50cm at IP1, IP2 and IP5, the nominal 2018 ion run optics
+call, file="scripts/ion_2018_opticsfile.21";
 
 
 !#######################################################################################################
@@ -62,12 +62,13 @@ call, file="scripts/optics/opticsfile.22";
 !###### Xing scheme should be disabled at start to simplify inclusion of errors/alignments/orbit #######
 !#######################################################################################################
 
+crossing_angle = %(CROSSING_ANGLE)s;  ! input in urad, so if you want 200urad only give 200. It was 137um during the ALICE issues
 on_x1 = 0; on_sep1 = 0; on_o1 = 0;
-on_x2 = 0; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0 ;
+on_x2 = crossing_angle; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0;
 on_x5 = 0; on_sep5 = 0; on_o5 = 0;
 on_x8 = 0; on_sep8 = 0; on_o8 = 0; on_a8 = 0;  on_sep8h = 0; on_x8v = 0;
 
-on_alice = 0;
+on_alice = 1;  ! sets the solenoid at ALICE
 on_sol_alice = 0;
 on_lhcb = 0;
 on_sol_atlas = 0;
@@ -75,7 +76,7 @@ on_sol_cms = 0;
 
 NRJ = 6500;
 brho := NRJ * 1e9 / clight;
-geometric_emit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance.
+geometric_emit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance, as it was during the ALICE issues
 
 ! Set up beam
 beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=geometric_emit, ey=geometric_emit;
@@ -94,50 +95,21 @@ endmatch;
 
 use, sequence=lhcb1;
 
-! ============================= !
-!  Implement Triplet Tilt Error !
-! ============================= !
+! ================================== !
+!  Implement Colinearity Knob at IP2 !
+! ================================== !
 
 ! Save strength of MQSX IP coupling correctors
-KQSX3.R1_old = KQSX3.R1;
-KQSX3.L1_old = KQSX3.L1;
-
-! Implement a tilt error for Q1 (right & left of IP1)
-tilt_angle = %(TILT_ERROR)s;
-select, flag=error, pattern="MQXA.1L1";
-EALIGN, DPSI=tilt_angle;  ! for afs / htcondor
-
-select, flag=error, pattern="MQXA.1R1";
-EALIGN, DPSI=-1*tilt_angle;  ! for afs / htcondor
-
-! ============================ !
-!  Implement Colinearity Knob  !
-! ============================ !
-
-! Save strength of MQSX IP coupling correctors
-KQSX3.R1_old = KQSX3.R1;
-KQSX3.L1_old = KQSX3.L1;
+KQSX3.R2_old = KQSX3.R2;
+KQSX3.L2_old = KQSX3.L2;
 
 ! Power MQSX for coupling bump
 colinearity_knob = %(COLIN_KNOB)s;  ! In units of the colin knob (positive integers only)
-KQSX3.R1 = colinearity_knob * 1E-4;
-KQSX3.L1 = - colinearity_knob * 1E-4;
-
-! ===================================== !
-!  Implement Rigidity Waist Shift Knob  !
-! ===================================== !
-
-! Save current value of triplets powering
-kqx.l1_old = kqx.l1;
-kqx.r1_old = kqx.r1;
-
-! Change Triplets powering for waist shift
-rigidity_waist_shift_knob = %(RIGIDITY_WAIST_SHIFT_KNOB)s;  ! In units of the rigidity waist shift knob (positive integers only)
-kqx.l1 = (1 + rigidity_waist_shift_knob *.005) * kqx.l1_old;
-kqx.r1 = (1 - rigidity_waist_shift_knob *.005) * kqx.r1_old;
+KQSX3.R2 = colinearity_knob * 1E-4;
+KQSX3.L2 = - colinearity_knob * 1E-4;
 
 
-! Match Tunes and Chromaticity to compensate the second order contribution of coupling (bump might not be closed)
+! Match Tunes and Chromaticity to compensate the second order contribution of coupling
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
@@ -150,11 +122,9 @@ endmatch;
 
 ! Twiss results to output file
 select, flag=twiss, clear;
-!select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!select, flag=twiss, pattern="MQXA", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!twiss, file="triplet_tilt_colin_compensation.tfs", ripken=True;
-twiss, file="Outputdata/triplet_tilt_colin_compensation.tfs", ripken=True;  ! for afs / htcondor
+select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, dx, bety, alfy, muy, dy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, dx, bety, alfy, muy, dy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+twiss, file="Outputdata/colin_disp.tfs", ripken=True;
 
 ! ========================== !
 !  Get Closest Tune Approach !
@@ -172,10 +142,10 @@ dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, Q1=62.295, Q2=60.295;
-  vary, name=dQx.b1, step=1.0E-7;
-  vary, name=dQy.b1, step=1.0E-7;
-  LMDIF, calls=100, tolerance=1.0E-21;
+  global, q1=62.295, q2=60.295;
+  vary,   name=dQx.b1, step=1.0E-7 ;
+  vary,   name=dQy.b1, step=1.0E-7 ;
+  LMDIF,  calls=100, tolerance=1.0E-21;
 endmatch;
 
 ! Put back the previous values
@@ -186,20 +156,18 @@ dQy.b1 = dQy.b1_init;
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
 twiss;
 
-
 ! ====================================================== !
 !  Save sequence to external file for use in sixtracklib !
 ! ====================================================== !
 
-save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.seq";
-
+!save, sequence=lhcb1, beam=true, file="Outputdata/lhc_colin_track.seq";
 
 ! ============================================= !
 !  Output Interesting Values for Python Scripts !
 ! ============================================= !
 
-value, tilt_angle;
 value, colinearity_knob;
-value, dqminacorr;  ! resulting cminus after correction
+value, rigidity_waist_shift_knob;
+value, dqminacorr;
 
 system, "unlink scripts";
