@@ -64,7 +64,7 @@ call, file="scripts/optics/hllhc_opt_round_150_1500.madx";
 crossing_angle = %(CROSSING_ANGLE)s;  ! input in urad, so if you want 200urad only give 200.
 on_x1 = crossing_angle; on_sep1 = 0; on_o1 = 0;
 on_x2 = 0; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0;
-on_x5 = crossing_angle; on_sep5 = 0; on_o5 = 0;
+on_x5 = 0; on_sep5 = 0; on_o5 = 0;
 on_x8 = 0; on_sep8 = 0; on_o8 = 0; on_a8 = 0;  on_sep8h = 0; on_x8v = 0;
 
 on_alice = 0;
