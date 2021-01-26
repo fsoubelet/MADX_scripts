@@ -34,23 +34,21 @@ vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
 lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
 lagrf400.b2 = 0;
 
-
 !#############################################################################
 !############################# Setting Up Lattice ############################
 !#############################################################################
 
-call, file="scripts/lhc_as-built.seq";
+call, file="scripts/sequences/lhc_as-built.seq";
 slicefactor = 8;
 beam;
 
-call, file="scripts/myslice.madx";
+call, file="scripts/toolkit/myslice.madx";
 beam;
 
-use, sequence=lhcb1;
-makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
-! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
-seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
+! Cycling w.r.t. to IP5 (that we want to compare to IP1 which is affected by local coupling)
+seqedit, sequence=lhcb1; flatten; cycle, start=IP5; endedit;
 use, sequence=lhcb1;
 
 !=> opticsfile.22 is with betastar 30cm at IP1 and IP5
@@ -94,22 +92,6 @@ endmatch;
 
 use, sequence=lhcb1;
 
-! ============================= !
-!  Implement Triplet Tilt Error !
-! ============================= !
-
-! Save strength of MQSX IP coupling correctors
-KQSX3.R1_old = KQSX3.R1;
-KQSX3.L1_old = KQSX3.L1;
-
-! Implement a tilt error for Q1 (right & left of IP1)
-tilt_angle = %(TILT_ERROR)s;
-select, flag=error, pattern="MQXA.1L1";
-EALIGN, DPSI=tilt_angle;  ! for afs / htcondor
-
-select, flag=error, pattern="MQXA.1R1";
-EALIGN, DPSI=-1*tilt_angle;  ! for afs / htcondor
-
 ! ============================ !
 !  Implement Colinearity Knob  !
 ! ============================ !
@@ -137,7 +119,7 @@ kqx.l1 = (1 + rigidity_waist_shift_knob *.005) * kqx.l1_old;
 kqx.r1 = (1 - rigidity_waist_shift_knob *.005) * kqx.r1_old;
 
 
-! Match Tunes and Chromaticity to compensate the second order contribution of coupling (bump might not be closed)
+! Match Tunes and Chromaticity to compensate the second order contribution of coupling
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
@@ -150,11 +132,8 @@ endmatch;
 
 ! Twiss results to output file
 select, flag=twiss, clear;
-!select, flag=twiss, class=monitor, column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!select, flag=twiss, pattern="MQXA", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-select, flag=twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
-!twiss, file="triplet_tilt_colin_compensation.tfs", ripken=True;
-twiss, file="Outputdata/triplet_tilt_colin_compensation.tfs", ripken=True;  ! for afs / htcondor
+select, flag=twiss, pattern="IP", column=name, s, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+twiss, file="Outputdata/colin_waist_dqmin.tfs", ripken=True;
 
 ! ========================== !
 !  Get Closest Tune Approach !
@@ -167,39 +146,76 @@ qymid = qy00 + qfmid;
 value, qfmid, qxmid, qymid;
 
 ! Save previous values
-dQx.b1_init = dQx.b1;
-dQy.b1_init = dQy.b1;
+dQx.b1_init=dQx.b1;
+dQy.b1_init=dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, Q1=62.295, Q2=60.295;
-  vary, name=dQx.b1, step=1.0E-7;
-  vary, name=dQy.b1, step=1.0E-7;
-  LMDIF, calls=100, tolerance=1.0E-21;
+  global, q1=62.295, q2=60.295;
+  vary,   name=dQx.b1, step=1.0E-7 ;
+  vary,   name=dQy.b1, step=1.0E-7 ;
+  LMDIF,  calls=100, tolerance=1.0E-21;
 endmatch;
 
 ! Put back the previous values
-dQx.b1 = dQx.b1_init;
-dQy.b1 = dQy.b1_init;
+dQx.b1=dQx.b1_init;
+dQy.b1=dQy.b1_init;
 
 ! Value of the Cminus
 dqminacorr = table(summ, q1) - table(summ, q2) - (qx00 - qy00);
 twiss;
 
+! ============================================= !
+!  Go to PTC for particle distribution tracking !
+! ============================================= !
+ptc_create_universe;
+ptc_create_layout, model=3, method=4, nst=3;
+PTC_ALIGN;
+SELECT, flag=ptc_twiss, pattern="IP", column=name, s, x, y, betx, alfx, mux, bety, alfy, muy, beta11, beta12, beta21, beta22, r11, r12, r21, r22;
+ptc_twiss, closed_orbit=true, no=6, icase=5, file="Outputdata/ptc_twiss.tfs";
 
-! ====================================================== !
-!  Save sequence to external file for use in sixtracklib !
-! ====================================================== !
+stop;
 
-save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.seq";
+! Initiate 1500 particles
+n = 1;
+while (n<=1500) {
+! Creating Gaussian particle distribution up to 5 sigma
+  ! Careful that this routine was meant to start at a place with alpha=0
+  Nsigmax = tgauss(5);
+  Nsigmay = tgauss(5);
+  Nsigmapx = tgauss(5);
+  Nsigmapy = tgauss(5);
+  phasex = RANF()*2*PI;
+  phasey = RANF()*2*PI;
 
+  ! Insert beta values at start of tracking, here IP5
+  betxip5 = 0.3;
+  betyip5 = 0.3;
+
+  ! Initialise phase space coordinates
+  myx = sqrt(betxip5) * Nsigmax*sqrt(geometric_emit);
+  myy = sqrt(betyip5) * Nsigmay*sqrt(geometric_emit);
+  mypx = Nsigmapx * sqrt(geometric_emit) / sqrt(betxip5);
+  mypy = Nsigmapy * sqrt(geometric_emit) / sqrt(betyip5);
+
+  ptc_start, x=myx, px=mypx, y=myy, py=mypy;
+  n = n + 1;
+};
+
+! Perform tracking and observe at IP5 (start of machine) and IP1
+ptc_observe, place=ip1;
+!ptc_track, icase=4, closed_orbit, dump, turns=50, norm_no=5, element_by_element;
+ptc_track, icase=5, closed_orbit, dump, turns=50, norm_no=5, element_by_element;
+ptc_track_end;
+ptc_end;
 
 ! ============================================= !
 !  Output Interesting Values for Python Scripts !
 ! ============================================= !
 
-value, tilt_angle;
 value, colinearity_knob;
-value, dqminacorr;  ! resulting cminus after correction
+value, rigidity_waist_shift_knob;
+value, dqminacorr;
 
+system, "for file in track.obs000*; do mv -f $file Outputdata/; done";  ! obs0001 is start of machine so IP5 here, obs002 is IP1. Move to htcondor's kept outputs
 system, "unlink scripts";

@@ -39,11 +39,11 @@ lagrf400.b2 = 0;
 !############################# Setting Up Lattice ############################
 !#############################################################################
 
-call, file="scripts/lhc_as-built.seq";
+call, file="scripts/sequences/lhc_as-built.seq";
 slicefactor = 8;
 beam;
 
-call, file="scripts/myslice.madx";
+call, file="scripts/toolkit/myslice.madx";
 beam;
 
 use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;

@@ -35,15 +35,15 @@ dqyfinal = qprime;
 !############################# Setting Up Lattice ############################
 !#############################################################################
 
-call, file="scripts/lhc_as-built.seq";
+call, file="scripts/sequences/lhc_as-built.seq";
 slicefactor = 8;
 beam;
 
-call, file="scripts/hllhc_sequence.madx";
+call, file="scripts/hllhc1.5_sequence.madx";
 slicefactor = 8;
 beam;
 
-!call, file="scripts/myslice.madx";
+!call, file="scripts/toolkit/myslice.madx";
 !beam;
 
 !use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
