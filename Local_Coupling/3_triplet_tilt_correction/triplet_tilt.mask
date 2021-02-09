@@ -166,7 +166,7 @@ dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, Q1=62.295, Q2=60.295;
+  global, q1=qxmid, q2=qymid;
   vary, name=dQx.b1, step=1.0E-7;
   vary, name=dQy.b1, step=1.0E-7;
   LMDIF, calls=100, tolerance=1.0E-21;

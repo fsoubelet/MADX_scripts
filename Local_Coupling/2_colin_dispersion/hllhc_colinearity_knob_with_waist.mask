@@ -1,5 +1,3 @@
-! This reproduces the running end-of-2018 scenario that had issues at IP2 from a colinearity knob wrong setting
-
 option, -echo, -warn;
 ! see https://github.com/fsoubelet/MADX_scripts
 !system, "ln -nfs ~/cernbox/OMC/MADX_scripts/Local_Coupling scripts";  ! for local
@@ -32,10 +30,6 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
-!vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
-!lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi 
-!lagrf400.b2 = 0;
-
 
 !#############################################################################
 !############################# Setting Up Lattice ############################
@@ -45,17 +39,21 @@ call, file="scripts/sequences/lhc_as-built.seq";
 slicefactor = 8;
 beam;
 
-call, file="scripts/toolkit/myslice.madx";
+call, file="scripts/hllhc1.5_sequence.madx";
+slicefactor = 8;
 beam;
 
-use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
+!call, file="scripts/toolkit/myslice.madx";
+!beam;
+
+!use, sequence=lhcb1; makethin, sequence=lhcb1, style=teapot, makedipedge=true;
 
 ! Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
 seqedit, sequence=lhcb1; flatten; cycle, start=IP3; endedit;
 use, sequence=lhcb1;
 
-!=> opticsfile.21 is with betastar 50cm at IP1, IP2 and IP5, the nominal 2018 ion run optics
-call, file="scripts/optics/ion_2018_opticsfile.21";
+!=> hilumi round optics with 15cm at IP1 & IP5
+call, file="scripts/optics/hllhc_opt_round_150_1500.madx";
 
 
 !#######################################################################################################
@@ -63,34 +61,35 @@ call, file="scripts/optics/ion_2018_opticsfile.21";
 !###### Xing scheme should be disabled at start to simplify inclusion of errors/alignments/orbit #######
 !#######################################################################################################
 
-crossing_angle = %(CROSSING_ANGLE)s;  ! input in urad, so if you want 200urad only give 200. It was 137um during the ALICE issues
-on_x1 = 0; on_sep1 = 0; on_o1 = 0;
-on_x2 = crossing_angle; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0;
+crossing_angle = %(CROSSING_ANGLE)s;  ! input in urad, so if you want 200urad only give 200.
+on_x1 = crossing_angle; on_sep1 = 0; on_o1 = 0;
+on_x2 = 0; on_sep2 = 0; on_o2 = 0; on_oe2 =0; on_a2 = 0;
 on_x5 = 0; on_sep5 = 0; on_o5 = 0;
 on_x8 = 0; on_sep8 = 0; on_o8 = 0; on_a8 = 0;  on_sep8h = 0; on_x8v = 0;
 
-on_alice = 1;  ! sets the solenoid at ALICE
+on_alice = 0;
 on_sol_alice = 0;
 on_lhcb = 0;
 on_sol_atlas = 0;
 on_sol_cms = 0;
 
-NRJ = 6500;
+NRJ = 7000;
 brho := NRJ * 1e9 / clight;
-geometric_emit := 3.75e-6 / (NRJ / 0.938); ! This is normalized emittance, as it was during the ALICE issues
+geometric_emit := 2.5e-6 / (NRJ / 0.938); ! This is normalized emittance
 
 ! Set up beam
 beam, sequence=lhcb1, bv=1, energy=NRJ, particle=proton, npart=1.0e10, kbunch=1, ex=geometric_emit, ey=geometric_emit;
 use, sequence=lhcb1;
 
 ! Match Tunes and Chromaticity
+! This is HLLHC so think to change the knobs names! kqt[df].b[12] for tunes, ks[df].b[12] for chroma
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
-  vary, name=dQx.b1_sq;
-  vary, name=dQy.b1_sq;
-  vary, name=dQpx.b1_sq;
-  vary, name=dQpy.b1_sq;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
+  vary, name=ksf.b1, step=1.0E-7;
+  vary, name=ksd.b1, step=1.0E-7;
   LMDIF, calls=100, tolerance=1.0E-21;
 endmatch;
 
@@ -100,24 +99,24 @@ use, sequence=lhcb1;
 !  Implement Colinearity Knob at IP2 !
 ! ================================== !
 
-! Save strength of MQSX IP coupling correctors
-KQSX3.R2_old = KQSX3.R2;
-KQSX3.L2_old = KQSX3.L2;
+! Save strength of MQSX IP1 coupling correctors
+KQSX3.R1_old = KQSX3.R1;
+KQSX3.L1_old = KQSX3.L1;
 
 ! Power MQSX for coupling bump
 colinearity_knob = %(COLIN_KNOB)s;  ! In units of the colin knob (positive integers only)
-KQSX3.R2 = colinearity_knob * 1E-4;
-KQSX3.L2 = - colinearity_knob * 1E-4;
+KQSX3.R1 = colinearity_knob * 1E-4;
+KQSX3.L1 = - colinearity_knob * 1E-4;
 
 
 ! Match Tunes and Chromaticity to compensate the second order contribution of coupling
 match, chrom;
   global, Q1=qx0, Q2=qy0;
   global, DQ1=qprime, DQ2=qprime;
-  vary, name=dQx.b1_sq;
-  vary, name=dQy.b1_sq;
-  vary, name=dQpx.b1_sq;
-  vary, name=dQpy.b1_sq;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
+  vary, name=ksf.b1, step=1.0E-7;
+  vary, name=ksd.b1, step=1.0E-7;
   LMDIF, calls=100, tolerance=1.0E-21;
 endmatch;
 
@@ -143,9 +142,9 @@ dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, q1=62.295, q2=60.295;
-  vary,   name=dQx.b1, step=1.0E-7 ;
-  vary,   name=dQy.b1, step=1.0E-7 ;
+  global, q1=qxmid, q2=qymid;
+  vary, name=kqtf.b1, step=1.0E-7;
+  vary, name=kqtd.b1, step=1.0E-7;
   LMDIF,  calls=100, tolerance=1.0E-21;
 endmatch;
 

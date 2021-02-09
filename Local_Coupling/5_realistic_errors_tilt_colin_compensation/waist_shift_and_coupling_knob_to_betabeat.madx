@@ -30,10 +30,6 @@ dqyinit = qprime;
 dqxfinal = qprime;
 dqyfinal = qprime;
 
-vrf400 = 6;  ! Getting RF powering for sixtracklib tracking later on
-lagrf400.b1 = 0.5;  ! Cavity phase difference in units of 2pi
-lagrf400.b2 = 0;
-
 
 !#############################################################################
 !############################# Setting Up Lattice ############################
@@ -121,7 +117,8 @@ twiss, file="Outputdata/correct_machine.tfs", ripken=True;
 CMRS.b1_sq_old = CMRS.b1_sq;
 
 ! Change coupling knob value
-coupling_knob = %(COUPLING_KNOB)s;  ! Value is target |C-|, should aim for a few units of 1E-3
+!coupling_knob = %(COUPLING_KNOB)s;  ! Value is target |C-|, should aim for a few units of 1E-3
+coupling_knob = 2E-3;  ! Value is target |C-|, should aim for a few units of 1E-3
 CMRS.b1_sq = coupling_knob;
 
 ! ===================================== !
@@ -170,7 +167,7 @@ dQy.b1_init = dQy.b1;
 
 ! Try to match on the same fractional tune, will fail at Cminus
 match;
-  global, q1=62.295, q2=60.295;
+  global, q1=qxmid, q2=qymid;
   vary,   name=dQx.b1, step=1.0E-7 ;
   vary,   name=dQy.b1, step=1.0E-7 ;
   LMDIF,  calls=100, tolerance=1.0E-21;
