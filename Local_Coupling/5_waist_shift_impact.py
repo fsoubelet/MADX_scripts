@@ -87,10 +87,10 @@ def make_simulation(coupling_knob: float = 0.0) -> Results:
     chrom_x, chrom_y = 2.0, 2.0
 
     logger.info("Calling optics")
-    # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-    # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-    madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-    madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+    madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+    madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+    # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
+    # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
     madx.command.beam()
     special.make_lhc_thin(madx, sequence="lhcb1", slicefactor=4)
     cycle_from_ip3(madx, sequence="lhcb1")
