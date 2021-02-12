@@ -29,7 +29,9 @@ class Results(BaseModel):
     coupling_knob: float
     dqmin_after_waist: float
     mean_betabeat_x: float
+    stdev_betabeat_x: float
     mean_betabeat_y: float
+    stdev_betabeat_y: float
 
     def to_json(self, filepath: Union[str, Path]) -> None:
         logger.debug(f"Exporting results structure to '{Path(filepath).absolute()}'")
@@ -43,7 +45,7 @@ class Results(BaseModel):
         Args:
                 json_file (Union[Path, str]): PosixPath object or string with the save file location.
         """
-        logger.info(f"Loading JSON Pokemon data from file at '{Path(json_file).absolute()}'")
+        logger.info(f"Loading JSON data from file at '{Path(json_file).absolute()}'")
         return cls.parse_file(json_file, content_type="application/json")
 
 
@@ -60,11 +62,11 @@ def fullpath(filepath: Path) -> str:
     return str(filepath.absolute())
 
 
-def mean_betabeat(betas_no_waist: np.ndarray, betas_with_waist: np.ndarray) -> float:
-    """Get the mean betabeat from two arrays"""
+def abs_betabeat(betas_no_waist: np.ndarray, betas_with_waist: np.ndarray) -> np.ndarray:
+    """Get the betabeat from two arrays"""
     # take np.abs here because we do a mean afterwards and it will be skewed by negative values
     betabeat: np.ndarray = np.abs((betas_with_waist - betas_no_waist) / betas_no_waist)
-    return betabeat.mean()
+    return betabeat
 
 
 # ----- Simulation ----- #
@@ -116,14 +118,19 @@ def make_simulation(coupling_knob: float = 0.0) -> Results:
     dqmin_with_waist = matching.get_closest_tune_approach(madx, "lhc", "lhcb1")
     madx.exit()
 
-    logger.info("Computing mean beta-beating")
-    mean_betabeat_x = mean_betabeat(correct_machine.betx.to_numpy(), after_waist_shift.betx.to_numpy())
-    mean_betabeat_y = mean_betabeat(correct_machine.bety.to_numpy(), after_waist_shift.bety.to_numpy())
+    logger.info("Computing beta-beating quantites")
+    mean_betabeat_x = abs_betabeat(correct_machine.betx.to_numpy(), after_waist_shift.betx.to_numpy()).mean()
+    stdev_betabeat_x = abs_betabeat(correct_machine.betx.to_numpy(), after_waist_shift.betx.to_numpy()).std()
+    mean_betabeat_y = abs_betabeat(correct_machine.bety.to_numpy(), after_waist_shift.bety.to_numpy()).mean()
+    stdev_betabeat_y = abs_betabeat(correct_machine.bety.to_numpy(), after_waist_shift.bety.to_numpy()).std()
+
     return Results(
         coupling_knob=coupling_knob,
         dqmin_after_waist=dqmin_with_waist,
         mean_betabeat_x=mean_betabeat_x,
+        stdev_betabeat_x=stdev_betabeat_x,
         mean_betabeat_y=mean_betabeat_y,
+        stdev_betabeat_y=stdev_betabeat_y,
     )
 
 
