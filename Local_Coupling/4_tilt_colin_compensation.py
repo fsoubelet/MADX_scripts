@@ -130,7 +130,7 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
     simulation_results = make_simulation(  # afs run
-        coupling_knob=%(COUPLING_KNOB)s,
+        colinearity_knob=%(COLIN_KNOB),
         tilt_angle=%(TILT_ANGLE)s,
         rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
     )
