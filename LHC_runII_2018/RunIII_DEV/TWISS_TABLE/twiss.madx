@@ -1,0 +1,67 @@
+!---|----1----|----2----|----3----|----4----|----5----|----6----|----7----|---8;
+Option,  warn,info;
+System,"rm -rf temp";
+System,"mkdir temp";
+system,"ln -fns /afs/cern.ch/eng/lhc/optics/runII/2018 db2018";
+
+option,-echo,-info;
+
+!---------------------------------------------------------------;
+!          CALL IN SELECTION, MACRO's, SEQUENCE and OPTICS FILES;
+!---------------------------------------------------------------;
+!Call sequence with finite length for the TAN
+Option, -echo,-warn,-info;
+REAL CONST l.MBAS2 = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+REAL CONST l.MBCS2 = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+REAL CONST L.MBAW  = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+REAL CONST L.MBXWT = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+REAL CONST L.MBLW  = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+REAL CONST L.MBLS2 = 0.0;  ! When CALLing "exp_pipe_model.madx" & "exp_pipe_install.madx"
+!REAL CONST l.TAN   = 3.7  ;REAL CONST l.TANAL = l.TAN;
+!REAL CONST l.TANAR = l.TAN;REAL CONST l.TANC  = l.TAN;
+!REAL CONST l.TCT   = 1.0;REAL CONST l.TCTH  = l.TCT;REAL CONST l.TCTVA = l.TCT;
+
+call,file="db2018/lhc_as-built.seq";
+
+call,file="db2018/RunIII_DEV/optics_round.madx";
+
+! V6.503 aperture model 
+call,   file="db2018/aperture/aperture.b1.madx";
+call,   file="db2018/aperture/aperture.b2.madx";
+call,   file="db2018/aperture/aper_tol.b1.madx";
+call,   file="db2018/aperture/aper_tol.b2.madx";
+! Model for ATLAS and CMS new exp. beam-pipe (central part radius=25 mm with 11mm tol everywhere)
+call,   file="db2018/aperture/exp_pipe_model_after_LS1.madx";   
+call,   file="db2018/aperture/exp_pipe_install_after_LS1.madx";   
+
+
+nrj=7000;  
+Beam,particle=proton,sequence=lhcb1,energy=NRJ,NPART=1.15E11,sige=4.5e-4;
+Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv = -1,NPART=1.15E11,sige=4.5e-4;         
+
+seqedit,sequence=lhcb1;flatten;cycle,start=s.ds.l3.b1;endedit;
+seqedit,sequence=lhcb2;flatten;cycle,start=s.ds.l3.b2;endedit;
+
+
+twissIR(opt,BIM,nIR) : macro = {
+Use, sequence=lhcBIM;
+select,flag=twiss,clear;
+select, flag=twiss, range=s.ds.lnIR.BIM/e.ds.rnIR.BIM  column=name,S,L,LRAD,ANGLE,K1L,K2L,K3L,K1SL,K2SL,K3SL,HKICK,VKICK,KICK,TILT,BETX,BETY,ALFX,ALFY,DX,DPX,DY,DPY,MUX,MUY,X,Y,PX,PY,T,PT,WX,WY,PHIX,PHIY,DDX,DDY,DDPX,DDPY,APER_1,APER_2,APER_3,APER_4,APTOL_1,APTOL_2,APTOL_3,APERTYPE,MECH_SEP;
+twiss,file=twiss_IRnIR_opt.BIM;
+};
+
+call,file="db2018/RunIII_DEV/optics_round.madx";on_sep1=0;on_sep5=0;on_x1=150;on_x5=150;on_ov5=-2;
+exec twissIR(round,b1,1);exec twissIR(round,b1,5);exec twissIR(round,b2,1);exec twissIR(round,b2,5);
+on_ov5=0;exec twissIR(roundnoCMSshift,b1,5);exec twissIR(roundnoCMSshift,b2,5);
+call,file="db2018/RunIII_DEV/optics_flat.madx";on_sep1=0;on_sep5=0;on_x1=140;on_x5=140;on_ov5=-2;
+exec twissIR(flat,b1,1);exec twissIR(flat,b1,5);exec twissIR(flat,b2,1);exec twissIR(flat,b2,5);
+on_ov5=0;exec twissIR(flatnoCMSshift,b1,5);exec twissIR(flatnoCMSshift,b2,5);
+
+system, "rm -R temp";
+system, "rm db2018";
+
+stop;
+
+
+
+

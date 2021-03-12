@@ -18,7 +18,7 @@ PATHS = {
 }
 
 logger.remove()
-logger.add(sys.stderr, format=LOGURU_FORMAT, level="DEBUG")
+logger.add(sys.stderr, format=LOGURU_FORMAT, level="TRACE")
 logger.add(PATHS["htc_outputdir"] / "full_pylog.log", format=LOGURU_FORMAT, level="TRACE")
 
 # ----- Utilities ----- #
@@ -71,12 +71,12 @@ def make_simulation(colin_knob: float = 0.0, rigidity_knob: float = 0.0) -> Resu
     chrom_x, chrom_y = 2.0, 2.0
 
     logger.info("Calling optics")
-    madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-    madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-    # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-    # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+    # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+    # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+    madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
+    madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
     madx.command.beam()
-    special.make_lhc_thin(madx, sequence="lhcb1", slicefactor=4)
+    # special.make_lhc_thin(madx, sequence="lhcb1", slicefactor=4)
     cycle_from_ip3(madx, sequence="lhcb1")
 
     logger.info("Setting up orbit, creating beams and matching working point")
@@ -84,14 +84,15 @@ def make_simulation(colin_knob: float = 0.0, rigidity_knob: float = 0.0) -> Resu
     special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
     madx.use(sequence="lhcb1")
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", tune_x, tune_y, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
-    )
+        madx, "lhc", "lhcb1", 62.27, 60.36, calls=200, telescopic_squeeze=True
+    )  # if no slicing, tunes need to be very apart to avoid a tune flip when applying the knobs
 
     logger.info("Setting up colinearity and rigidity waist shift knobs for IR1")
     special.apply_lhc_colinearity_knob(madx, colinearity_knob_value=colin_knob, ir=1)
     special.apply_lhc_rigidity_waist_shift_knob(madx, rigidty_waist_shift_value=rigidity_knob, ir=1)
+    madx.twiss(chrom=True, ripken=True)
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", tune_x, tune_y, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
+        madx, "lhc", "lhcb1", tune_x, tune_y, calls=200, telescopic_squeeze=True
     )
 
     logger.info("Executing Closest Tune Approach\n")
@@ -102,12 +103,12 @@ def make_simulation(colin_knob: float = 0.0, rigidity_knob: float = 0.0) -> Resu
 
 
 if __name__ == "__main__":
-    simulation_results = make_simulation(  # afs run
-    colin_knob=%(COLIN_KNOB)s,
-    rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
-    )
-    # simulation_results = make_simulation(  # local testing
-    #     colin_knob=-3.0,
-    #     rigidity_knob=1,
+    # simulation_results = make_simulation(  # afs run
+    #     colin_knob=%(COLIN_KNOB)s,
+    #     rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
     # )
+    simulation_results = make_simulation(  # local testing
+        colin_knob=-3.0,
+        rigidity_knob=1,
+    )
     simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")

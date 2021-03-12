@@ -1,0 +1,48 @@
+! Links definitions
+option, warn,info;
+system,"ln -fns /afs/cern.ch/eng/lhc/optics/runII/2018 lhc";
+
+Option, -echo,-warn,-info;
+call,file="lhc/lhc_as-built.seq";
+call,file="lhc/toolkit/macro.madx";
+
+
+exec,mk_beam(450);
+
+
+get_opt(bb): macro={
+call,file="lhc/PROTON/opticsfile.1";
+call,file="lhc/highbeta/IP1_00bb.str";
+call,file="lhc/highbeta/IP5_00bb.str";
+call,file="lhc/highbeta/IP1_00bb_bump.str";
+call,file="lhc/highbeta/IP5_00bb_bump.str";
+call,file="lhc/highbeta/tune_00bb.str";
+on_ov5=0; on_ov2=0;
+exec,check_ip(b1); exec,check_ip(b2);
+value,
+refbetxip1b1, refbetxip1b2, refbetyip1b1, refbetyip1b2,
+refbetxip5b1, refbetxip5b2, refbetyip5b1, refbetyip5b2;
+value, refqxb1,refqxb2, refqyb1,refqyb2;
+value, refdqxb1,refdqxb2, refdqyb1,refdqyb2;
+}
+
+exec,get_opt(12);
+exec,get_opt(14);
+exec,get_opt(16);
+exec,get_opt(19);
+exec,get_opt(22);
+exec,get_opt(25);
+exec,get_opt(30);
+!exec,get_opt(33);
+exec,get_opt(36);
+!exec,get_opt(40);
+exec,get_opt(43);
+!exec,get_opt(46);
+exec,get_opt(51);
+!exec,get_opt(54);
+exec,get_opt(60);
+exec,get_opt(67);
+exec,get_opt(75);
+exec,get_opt(82);
+exec,get_opt(90);
+

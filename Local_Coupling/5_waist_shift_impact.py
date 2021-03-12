@@ -3,7 +3,9 @@ import sys
 from pathlib import Path
 from typing import List, Union
 
+import cpymad
 import numpy as np
+import pyhdtoolkit
 from cpymad.madx import Madx
 from loguru import logger
 from pydantic import BaseModel
@@ -135,10 +137,14 @@ def make_simulation(coupling_knob: float = 0.0) -> Results:
 
 
 if __name__ == "__main__":
-    simulation_results = make_simulation(  # afs run
-        coupling_knob=%(COUPLING_KNOB)s,
-    )
+    with Madx(stdout=False) as mad:
+        logger.critical(
+            f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
+        )
+    # simulation_results = make_simulation(  # afs run
+    #     coupling_knob=%(COUPLING_KNOB)s,
+    # )
     # simulation_results = make_simulation(  # local testing
     #     coupling_knob=0.003,
     # )
-    simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")
+    # simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")

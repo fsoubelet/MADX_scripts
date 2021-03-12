@@ -1,0 +1,33 @@
+! match Chromaticity to nominal Values for ATS
+! for telescopic optics only use RS circuits in non-ATS sectors, S. Fartoukh 22/03/2018
+
+
+use, sequence=lhcb1;
+use, sequence=lhcb2;
+
+if (arc_squeeze <0.6)
+{
+match,sequence=lhcb1, lhcb2;
+global, dq1=2.0, dq2=2.0;
+vary, name=dQpx.b1,step=0.05;
+vary, name=dQpy.b1,step=0.05;
+vary, name=dQpx.b2,step=0.05;
+vary, name=dQpy.b2,step=0.05;
+lmdif,calls=500,tolerance=1.0e-20;
+endmatch;
+};
+
+if (arc_squeeze==1)
+{
+match,sequence=lhcb1, lhcb2;
+global, dq1=2.0, dq2=2.0;
+vary, name=dQpx.b1_sq,step=0.05;
+vary, name=dQpy.b1_sq,step=0.05;
+vary, name=dQpx.b2_sq,step=0.05;
+vary, name=dQpy.b2_sq,step=0.05;
+lmdif,calls=500,tolerance=1.0e-20;
+endmatch;
+};
+
+
+return;

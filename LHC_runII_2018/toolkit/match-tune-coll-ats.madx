@@ -1,0 +1,32 @@
+! match tunes to injection values 0.31,0.32 for ATS
+! for telescopic optics only use RQT in non-ATS sectors, S. Fartoukh 22/03/2018
+
+use, sequence=lhcb1;
+use, sequence=lhcb2;
+
+if (arc_squeeze < 0.6)
+{
+match,sequence=lhcb1, lhcb2;
+global, q1=62.31, q2=60.32;
+vary, name=dQx.b1 ,step=0.001;
+vary, name=dQy.b1 ,step=0.001;
+vary, name=dQx.b2 ,step=0.001;
+vary, name=dQy.b2 ,step=0.001;
+lmdif,calls=500,tolerance=1.0e-20;
+endmatch;
+};
+
+if (arc_squeeze ==1)
+{
+match,sequence=lhcb1, lhcb2;
+global, q1=62.31, q2=60.32;
+vary, name=dQx.b1_sq ,step=0.001;
+vary, name=dQy.b1_sq ,step=0.001;
+vary, name=dQx.b2_sq ,step=0.001;
+vary, name=dQy.b2_sq ,step=0.001;
+lmdif,calls=500,tolerance=1.0e-20;
+endmatch;
+};
+
+
+return;
