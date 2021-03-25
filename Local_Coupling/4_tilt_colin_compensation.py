@@ -76,19 +76,21 @@ def make_simulation(
         madx.option(echo=False, warn=False)
 
         logger.info("Calling optics")
-        madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-        madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-        # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-        # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+        # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+        # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+        madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
+        madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
         logger.info("Setting up orbit and creating beams")
         special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
         orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
         special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
+        special.make_lhc_thin(madx, sequence="lhcb1", slicefactor=4)
         madx.use(sequence="lhcb1")
         # Widen tune split first to avoid a tune flip when applying knobs
         matching.match_tunes_and_chromaticities(
-            madx, "lhc", "lhcb1", 62.27, 60.36, 2.0, 2.0, telescopic_squeeze=True
+            # madx, "lhc", "lhcb1", 62.27, 60.36, 2.0, 2.0, telescopic_squeeze=True
+            madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=500, telescopic_squeeze=True
         )
 
         logger.info("Applying tilt error to Q1s")
@@ -102,7 +104,7 @@ def make_simulation(
         special.apply_lhc_colinearity_knob(madx, colinearity_knob_value=colinearity_knob, ir=1)
         special.apply_lhc_rigidity_waist_shift_knob(madx, rigidty_waist_shift_value=rigidity_knob, ir=1)
         matching.match_tunes_and_chromaticities(
-            madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200, telescopic_squeeze=True
+            madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=500, telescopic_squeeze=True,
         )
         dqmin_cta = matching.get_closest_tune_approach(madx, "lhc", "lhcb1", telescopic_squeeze=True)
         twiss_tfs = twiss.get_twiss_tfs(madx)
@@ -129,14 +131,14 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    simulation_results = make_simulation(  # afs run
-        colinearity_knob=%(COLIN_KNOB)s,
-        tilt_angle=%(TILT_ANGLE)s,
-        rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
-    )
-    # simulation_results = make_simulation(  # local testing
-    #     colinearity_knob=7,
-    #     tilt_angle=-2e-3,
-    #     rigidity_knob=1,
+    # simulation_results = make_simulation(  # afs run
+    #     colinearity_knob=%(COLIN_KNOB)s,
+    #     tilt_angle=%(TILT_ANGLE)s,
+    #     rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
     # )
+    simulation_results = make_simulation(  # local testing
+        colinearity_knob=-2,
+        tilt_angle=6e-4,
+        rigidity_knob=1,
+    )
     simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")
