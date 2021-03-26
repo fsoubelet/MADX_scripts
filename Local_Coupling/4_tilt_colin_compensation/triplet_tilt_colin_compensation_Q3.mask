@@ -191,7 +191,7 @@ twiss;
 !  Save sequence to external file for use in sixtracklib !
 ! ====================================================== !
 
-save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.seq";
+!save, sequence=lhcb1, beam=true, file="Outputdata/lhc_tilt_compensation_track.seq";
 
 
 ! ============================================= !
