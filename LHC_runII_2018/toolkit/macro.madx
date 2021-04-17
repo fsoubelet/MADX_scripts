@@ -59,681 +59,644 @@
 
 select(NIR,sec1,sec2,BIM): macro = {
 
-use,sequence=lhcBIM,range=s.cell.sec1.BIM/e.cell.sec1.BIM;
-savebeta,label=baux,place=s.cell.sec1.BIM;
-twiss;
+    use,sequence=lhcBIM,range=s.cell.sec1.BIM/e.cell.sec1.BIM;
+    savebeta,label=baux,place=s.cell.sec1.BIM;
+    twiss;
 
-use,sequence=lhcBIM,range=e.cell.sec1.BIM/s.ds.lNIR.BIM;
-savebeta,label=birNIRBIM,place=s.ds.lNIR.BIM;
-twiss,beta0=baux;
-birNIRBIM->mux=0;birNIRBIM->muy=0;
+    use,sequence=lhcBIM,range=e.cell.sec1.BIM/s.ds.lNIR.BIM;
+    savebeta,label=birNIRBIM,place=s.ds.lNIR.BIM;
+    twiss,beta0=baux;
+    birNIRBIM->mux=0;birNIRBIM->muy=0;
 
-use,sequence=lhcBIM,range=s.cell.sec2.BIM/e.cell.sec2.BIM;
-savebeta,label=baux,place=s.cell.sec2.BIM;
-twiss;
-betxaux=baux->betx;betyaux=baux->bety;
-alfxaux=baux->alfx;alfyaux=baux->alfy;
-dxaux=baux->dx;dpxaux=baux->dpx;
+    use,sequence=lhcBIM,range=s.cell.sec2.BIM/e.cell.sec2.BIM;
+    savebeta,label=baux,place=s.cell.sec2.BIM;
+    twiss;
 
-use,sequence=lhcBIM,range=e.ds.rNIR.BIM/s.cell.sec2.BIM;
-savebeta,label=eirNIRBIM,place=e.ds.rNIR.BIM;
-twiss,rmatrix,betx=1,bety=1;
-r11=table(twiss,s.cell.sec2.BIM,Re11);r12=table(twiss,s.cell.sec2.BIM,Re12);
-r21=table(twiss,s.cell.sec2.BIM,Re21);r22=table(twiss,s.cell.sec2.BIM,Re22);
-r33=table(twiss,s.cell.sec2.BIM,Re33);r34=table(twiss,s.cell.sec2.BIM,Re34);
-r43=table(twiss,s.cell.sec2.BIM,Re43);r44=table(twiss,s.cell.sec2.BIM,Re44);
-r16=table(twiss,s.cell.sec2.BIM,Re16);r26=table(twiss,s.cell.sec2.BIM,Re26);
-eirNIRBIM->betx=r22^2*betxaux+2.*r22*r12*alfxaux+r12^2*(1.+alfxaux^2)/betxaux;
-eirNIRBIM->alfx=r22*r21*betxaux+(r11*r22+r12*r21)*alfxaux+r12*r11*(1.+alfxaux^2)/betxaux;
-eirNIRBIM->bety=r44^2*betyaux+2.*r44*r34*alfyaux+r34^2*(1.+alfyaux^2)/betyaux;
-eirNIRBIM->alfy=r44*r43*betyaux+(r33*r44+r34*r43)*alfyaux+r34*r33*(1.+alfyaux^2)/betyaux;
-eirNIRBIM->dx=r22*(dxaux-r16)-r12*(dpxaux-r26);
-eirNIRBIM->dpx=-r21*(dxaux-r16)+r11*(dpxaux-r26);
+    betxaux=baux->betx;betyaux=baux->bety;
+    alfxaux=baux->alfx;alfyaux=baux->alfy;
+    dxaux=baux->dx;dpxaux=baux->dpx;
 
-!use,sequence=lhcBIM,range=e.ds.rNIR.BIM/s.cell.sec2.BIM;
-!savebeta,label=baux,place=s.cell.sec2.BIM;
-!twiss,beta0=eirNIRBIM;
-!use,sequence=lhcBIM,range=s.cell.sec2.BIM/e.cell.sec2.BIM;
-!savebeta,label=baux1,place=s.cell.sec2.BIM;
-!twiss;
-!value,baux->betx-baux1->betx,baux->bety-baux1->bety;
-!value,baux->alfx-baux1->alfx,baux->alfy-baux1->alfy;
-!value,baux->dx-baux1->dx,baux->dpx-baux1->dpx;
+    use,sequence=lhcBIM,range=e.ds.rNIR.BIM/s.cell.sec2.BIM;
+    savebeta,label=eirNIRBIM,place=e.ds.rNIR.BIM;
+    twiss,rmatrix,betx=1,bety=1;
 
-!show,birNIRBIM;
-!show,eirNIRBIM;
+    r11=table(twiss,s.cell.sec2.BIM,Re11);r12=table(twiss,s.cell.sec2.BIM,Re12);
+    r21=table(twiss,s.cell.sec2.BIM,Re21);r22=table(twiss,s.cell.sec2.BIM,Re22);
+    r33=table(twiss,s.cell.sec2.BIM,Re33);r34=table(twiss,s.cell.sec2.BIM,Re34);
+    r43=table(twiss,s.cell.sec2.BIM,Re43);r44=table(twiss,s.cell.sec2.BIM,Re44);
+    r16=table(twiss,s.cell.sec2.BIM,Re16);r26=table(twiss,s.cell.sec2.BIM,Re26);
+
+    eirNIRBIM->betx=r22^2*betxaux+2.*r22*r12*alfxaux+r12^2*(1.+alfxaux^2)/betxaux;
+    eirNIRBIM->alfx=r22*r21*betxaux+(r11*r22+r12*r21)*alfxaux+r12*r11*(1.+alfxaux^2)/betxaux;
+    eirNIRBIM->bety=r44^2*betyaux+2.*r44*r34*alfyaux+r34^2*(1.+alfyaux^2)/betyaux;
+    eirNIRBIM->alfy=r44*r43*betyaux+(r33*r44+r34*r43)*alfyaux+r34*r33*(1.+alfyaux^2)/betyaux;
+    eirNIRBIM->dx=r22*(dxaux-r16)-r12*(dpxaux-r26);
+    eirNIRBIM->dpx=-r21*(dxaux-r16)+r11*(dpxaux-r26);
+
+    !use,sequence=lhcBIM,range=e.ds.rNIR.BIM/s.cell.sec2.BIM;
+    !savebeta,label=baux,place=s.cell.sec2.BIM;
+    !twiss,beta0=eirNIRBIM;
+    !use,sequence=lhcBIM,range=s.cell.sec2.BIM/e.cell.sec2.BIM;
+    !savebeta,label=baux1,place=s.cell.sec2.BIM;
+    !twiss;
+    !value,baux->betx-baux1->betx,baux->bety-baux1->bety;
+    !value,baux->alfx-baux1->alfx,baux->alfy-baux1->alfy;
+    !value,baux->dx-baux1->dx,baux->dpx-baux1->dpx;
+    !show,birNIRBIM;
+    !show,eirNIRBIM;
 
 };
 
+
 adjsector(NIR): macro = {
-
-if(NIR ==1) {sec1:=81;sec2:=12;};
-if(NIR ==2) {sec1:=12;sec2:=23;};
-if(NIR ==3) {sec1:=23;sec2:=34;};
-if(NIR ==4) {sec1:=34;sec2:=45;};
-if(NIR ==5) {sec1:=45;sec2:=56;};
-if(NIR ==6) {sec1:=56;sec2:=67;};
-if(NIR ==7) {sec1:=67;sec2:=78;};
-if(NIR ==8) {sec1:=78;sec2:=81;};
-
+    if(NIR ==1) {sec1:=81; sec2:=12;};
+    if(NIR ==2) {sec1:=12; sec2:=23;};
+    if(NIR ==3) {sec1:=23; sec2:=34;};
+    if(NIR ==4) {sec1:=34; sec2:=45;};
+    if(NIR ==5) {sec1:=45; sec2:=56;};
+    if(NIR ==6) {sec1:=56; sec2:=67;};
+    if(NIR ==7) {sec1:=67; sec2:=78;};
+    if(NIR ==8) {sec1:=78; sec2:=81;};
 };
 
 
 mk_irtwiss(NIR,BIM): macro = {
-exec,adjsector(NIR);
-if (on_holdselect==0){ exec,select(NIR,$sec1,$sec2,BIM); };
-exec,twiss_opt;
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-twiss,beta0=birNIRBIM,save,file=twiss_irNIRBIM.tfs;
-refbetxipNIRBIM=table(twiss,IPNIR,betx);
-refbetyipNIRBIM=table(twiss,IPNIR,bety);
-refalfxipNIRBIM=table(twiss,IPNIR,alfx);
-refalfyipNIRBIM=table(twiss,IPNIR,alfy);
-refdxipNIRBIM=table(twiss,IPNIR,dx);
-refdpxipNIRBIM=table(twiss,IPNIR,dpx);
-refmuxipNIRBIM=table(twiss,e.ds.rNIR.BIM,mux);
-refmuyipNIRBIM=table(twiss,e.ds.rNIR.BIM,muy);
-refmuxipNIRBIM_l =table(twiss,IPNIR,mux);
-refmuyipNIRBIM_l =table(twiss,IPNIR,muy);
-refmuxipNIRBIM_r =refmuxipNIRBIM-refmuxipNIRBIM_l;
-refmuyipNIRBIM_r =refmuyipNIRBIM-refmuyipNIRBIM_l;
-refxipNIRBIM=table(twiss,IPNIR,x);
-refyipNIRBIM=table(twiss,IPNIR,y);
-refpxipNIRBIM=table(twiss,IPNIR,px);
-refpyipNIRBIM=table(twiss,IPNIR,py);
-value,refbetxipNIRBIM,refbetyipNIRBIM,refalfxipNIRBIM,refalfyipNIRBIM;
-value,refdxipNIRBIM,refdpxipNIRBIM,refmuxipNIRBIM,refmuyipNIRBIM;
-value,refmuxipNIRBIM_l,refmuyipNIRBIM_l,refmuxipNIRBIM_r,refmuyipNIRBIM_r;
-value,refxipNIRBIM,refyipNIRBIM,refpxipNIRBIM,refpyipNIRBIM;
-};
+    exec,adjsector(NIR);
+    if (on_holdselect==0) { exec, select(NIR,$sec1,$sec2,BIM); };
+    exec, twiss_opt;
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    twiss,beta0=birNIRBIM,save,file=twiss_irNIRBIM.tfs;
 
+    refbetxipNIRBIM=table(twiss,IPNIR,betx);
+    refbetyipNIRBIM=table(twiss,IPNIR,bety);
+    refalfxipNIRBIM=table(twiss,IPNIR,alfx);
+    refalfyipNIRBIM=table(twiss,IPNIR,alfy);
+    refdxipNIRBIM=table(twiss,IPNIR,dx);
+    refdpxipNIRBIM=table(twiss,IPNIR,dpx);
+    refmuxipNIRBIM=table(twiss,e.ds.rNIR.BIM,mux);
+    refmuyipNIRBIM=table(twiss,e.ds.rNIR.BIM,muy);
+    refmuxipNIRBIM_l =table(twiss,IPNIR,mux);
+    refmuyipNIRBIM_l =table(twiss,IPNIR,muy);
+    refmuxipNIRBIM_r =refmuxipNIRBIM-refmuxipNIRBIM_l;
+    refmuyipNIRBIM_r =refmuyipNIRBIM-refmuyipNIRBIM_l;
+    refxipNIRBIM=table(twiss,IPNIR,x);
+    refyipNIRBIM=table(twiss,IPNIR,y);
+    refpxipNIRBIM=table(twiss,IPNIR,px);
+    refpyipNIRBIM=table(twiss,IPNIR,py);
+    value,refbetxipNIRBIM,refbetyipNIRBIM,refalfxipNIRBIM,refalfyipNIRBIM;
+    value,refdxipNIRBIM,refdpxipNIRBIM,refmuxipNIRBIM,refmuyipNIRBIM;
+    value,refmuxipNIRBIM_l,refmuyipNIRBIM_l,refmuxipNIRBIM_r,refmuyipNIRBIM_r;
+    value,refxipNIRBIM,refyipNIRBIM,refpxipNIRBIM,refpyipNIRBIM;
+};
 
 
 PLOT_OPT(NIR,BIM): macro = {
-exec adjsector(NIR);
-exec select(NIR,$sec1,$sec2,BIM);
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
-twiss,beta0=birNIRBIM,save,file=twiss.aux;
-System,"cat twiss.aux";
-System,"rm twiss.aux";
-PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
+    exec adjsector(NIR);
+    exec select(NIR,$sec1,$sec2,BIM);
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    select,flag=twiss,clear;
+    select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
+    twiss,beta0=birNIRBIM,save,file=twiss.aux;
+    System,"cat twiss.aux";
+    System,"rm twiss.aux";
+    PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
 };
+
 
 PLOT_XING(NIR,BIM): macro = {
-exec adjsector(NIR);
-exec select(NIR,$sec1,$sec2,BIM);
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select, flag=twiss,pattern="IP",column=name,betx,bety,x,py,y,px;
-twiss,beta0=birNIRBIM,save,file=twiss.aux;
-System,"cat twiss.aux";
-System,"rm twiss.aux";
-PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=X,Y;
+    exec adjsector(NIR);
+    exec select(NIR,$sec1,$sec2,BIM);
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    select,flag=twiss,clear;
+    select, flag=twiss,pattern="IP",column=name,betx,bety,x,py,y,px;
+    twiss,beta0=birNIRBIM,save,file=twiss.aux;
+    System,"cat twiss.aux";
+    System,"rm twiss.aux";
+    PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=X,Y;
 };
+
 
 PLOTW(BIM): macro = {
-
-Use, sequence=lhcBIM;
-TWISS,chrom,sequence=lhcBIM;
-PLOT,STYLE=100,colour=100,noline=true,TITLE="LHCCOL",HAXIS=S,VAXIS1=wx,wy,SPLINE;
-value,table(twiss,IP3,wx),table(twiss,IP3,wy),
-      table(twiss,IP7,wx),table(twiss,IP7,wy),
-      table(summ,q1),table(summ,q2),
-      table(summ,dq1),table(summ,dq2);
-value,table(twiss,IP1,wx),
-      table(twiss,IP1,wx)*cos(twopi*table(twiss,IP1,PHIX)),
-      table(twiss,IP1,wx)*sin(twopi*table(twiss,IP1,PHIX));
-value,table(twiss,IP1,wy),
-      table(twiss,IP1,wy)*cos(twopi*table(twiss,IP1,PHIY)),
-      table(twiss,IP1,wy)*sin(twopi*table(twiss,IP1,PHIY));
-value,table(twiss,IP5,wx),
-      table(twiss,IP5,wx)*cos(twopi*table(twiss,IP5,PHIX)),
-      table(twiss,IP5,wx)*sin(twopi*table(twiss,IP5,PHIX));
-value,table(twiss,IP5,wy),
-      table(twiss,IP5,wy)*cos(twopi*table(twiss,IP5,PHIY)),
-      table(twiss,IP5,wy)*sin(twopi*table(twiss,IP5,PHIY));
+    Use, sequence=lhcBIM;
+    TWISS,chrom,sequence=lhcBIM;
+    PLOT,STYLE=100,colour=100,noline=true,TITLE="LHCCOL",HAXIS=S,VAXIS1=wx,wy,SPLINE;
+    value,table(twiss,IP3,wx),table(twiss,IP3,wy),
+          table(twiss,IP7,wx),table(twiss,IP7,wy),
+          table(summ,q1),table(summ,q2),
+          table(summ,dq1),table(summ,dq2);
+    value,table(twiss,IP1,wx),
+          table(twiss,IP1,wx)*cos(twopi*table(twiss,IP1,PHIX)),
+          table(twiss,IP1,wx)*sin(twopi*table(twiss,IP1,PHIX));
+    value,table(twiss,IP1,wy),
+          table(twiss,IP1,wy)*cos(twopi*table(twiss,IP1,PHIY)),
+          table(twiss,IP1,wy)*sin(twopi*table(twiss,IP1,PHIY));
+    value,table(twiss,IP5,wx),
+          table(twiss,IP5,wx)*cos(twopi*table(twiss,IP5,PHIX)),
+          table(twiss,IP5,wx)*sin(twopi*table(twiss,IP5,PHIX));
+    value,table(twiss,IP5,wy),
+          table(twiss,IP5,wy)*cos(twopi*table(twiss,IP5,PHIY)),
+          table(twiss,IP5,wy)*sin(twopi*table(twiss,IP5,PHIY));
 };
+
 
 mk_tune(BIM): macro = {
-select,flag=twiss,clear;
-select,flag=twiss,column=name,betx,bety;
-select,flag=summ,clear;
-select,flag=summ,column=bx1,by1,bx2,by2,bx3,by3,bx4,by4,bx5,by5,bx6,by6,bx7,by7,bx8,by8;
-use,sequence=lhcBIM;twiss;
-bx10=table(twiss,IP1,betx);bx1:=(table(twiss,IP1,betx)/bx10-1.)*100.;
-by10=table(twiss,IP1,bety);by1:=(table(twiss,IP1,bety)/by10-1.)*100.;
-bx50=table(twiss,IP5,betx);bx5:=(table(twiss,IP5,betx)/bx50-1.)*100.;
-by50=table(twiss,IP5,bety);by5:=(table(twiss,IP5,bety)/by50-1.)*100.;
-bx30=table(twiss,IP3,betx);bx3:=(table(twiss,IP3,betx)/bx30-1.)*100.;
-by30=table(twiss,IP3,bety);by3:=(table(twiss,IP3,bety)/by30-1.)*100.;
-bx70=table(twiss,IP7,betx);bx7:=(table(twiss,IP7,betx)/bx70-1.)*100.;
-by70=table(twiss,IP7,bety);by7:=(table(twiss,IP7,bety)/by70-1.)*100.;
-twiss,sequence=lhcBIM,DELTAP=-0.0015:0.00151:0.0001;
-select,flag=summ,clear; !BUUGGG
-write,table=summ,file=temp/summ_lhcBIM.tfs;
+    select,flag=twiss,clear;
+    select,flag=twiss,column=name,betx,bety;
+    select,flag=summ,clear;
+    select,flag=summ,column=bx1,by1,bx2,by2,bx3,by3,bx4,by4,bx5,by5,bx6,by6,bx7,by7,bx8,by8;
+    use,sequence=lhcBIM;twiss;
+    bx10=table(twiss,IP1,betx); bx1:=(table(twiss,IP1,betx)/bx10-1.)*100.;
+    by10=table(twiss,IP1,bety); by1:=(table(twiss,IP1,bety)/by10-1.)*100.;
+    bx50=table(twiss,IP5,betx); bx5:=(table(twiss,IP5,betx)/bx50-1.)*100.;
+    by50=table(twiss,IP5,bety); by5:=(table(twiss,IP5,bety)/by50-1.)*100.;
+    bx30=table(twiss,IP3,betx); bx3:=(table(twiss,IP3,betx)/bx30-1.)*100.;
+    by30=table(twiss,IP3,bety); by3:=(table(twiss,IP3,bety)/by30-1.)*100.;
+    bx70=table(twiss,IP7,betx); bx7:=(table(twiss,IP7,betx)/bx70-1.)*100.;
+    by70=table(twiss,IP7,bety); by7:=(table(twiss,IP7,bety)/by70-1.)*100.;
+    twiss,sequence=lhcBIM,DELTAP=-0.0015:0.00151:0.0001;
+    select,flag=summ,clear; !BUUGGG
+    write,table=summ,file=temp/summ_lhcBIM.tfs;
 };
 
+
 _mk_twissb12(.tfs): macro={
-exec,twiss_opt;
-use,sequence=lhcb1;twiss,chrom,file=temp/twiss_lhcb1.tfs;
-use,sequence=lhcb2;twiss,chrom,file=temp/twiss_lhcb2.tfs;
+    exec,twiss_opt;
+    use,sequence=lhcb1;twiss,chrom,file=temp/twiss_lhcb1.tfs;
+    use,sequence=lhcb2;twiss,chrom,file=temp/twiss_lhcb2.tfs;
 };
 
 mk_beam(NRJJ): macro = {
-NRJ=NRJJ;
-gamma_rel      := NRJ/pmass;
-if (emittance_norm==0){ emittance_norm = 3.5e-6; };
-bunch_len=0.0755;
-epsx:=emittance_norm /gamma_rel;
-epsy:=emittance_norm /gamma_rel;
-if (mylhcbeam>2){ bv_aux=-1; } else { bv_aux=1; };
-Beam,particle=proton,sequence=lhcb1,energy=NRJ,NPART=2.2E11,sige=4.5e-4*sqrt(450./NRJ),ex:=epsx,ey:=epsy,sigt:=bunch_len;
-Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv = -bv_aux,NPART=2.2E11,sige=4.5e-4*sqrt(450./NRJ),ex:=epsx,ey:=epsy,sigt:=bunch_len;
+    NRJ=NRJJ;
+    gamma_rel := NRJ/pmass;
+    if (emittance_norm==0){ emittance_norm = 3.5e-6; };
+    bunch_len=0.0755;
+    epsx:=emittance_norm /gamma_rel;
+    epsy:=emittance_norm /gamma_rel;
+    if (mylhcbeam>2){ bv_aux=-1; } else { bv_aux=1; };
+    Beam,particle=proton,sequence=lhcb1,energy=NRJ,NPART=2.2E11,sige=4.5e-4*sqrt(450./NRJ),ex:=epsx,ey:=epsy,sigt:=bunch_len;
+    Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv = -bv_aux,NPART=2.2E11,sige=4.5e-4*sqrt(450./NRJ),ex:=epsx,ey:=epsy,sigt:=bunch_len;
 };
 
 
 mk_apir(nir,bim,NRJ,FULL) : macro ={
-exec,mk_beam(NRJ);
-!if (apbbeat==0){ apbbeat=1.1;};
-!if (halor==0){ halor=8.4;};
-!if (halox==0){ halox=7.3;};
-!if (haloy==0){ haloy=7.3;};
-!if (DParcx==0){DParcx=0.273;};
-!if (DParcy==0){DParcy=0.273;};
+    exec,mk_beam(NRJ);
+!    if (apbbeat==0){ apbbeat=1.1;};
+!    if (halor==0){ halor=8.4;};
+!    if (halox==0){ halox=7.3;};
+!    if (haloy==0){ haloy=7.3;};
+!    if (DParcx==0){DParcx=0.273;};
+!    if (DParcy==0){DParcy=0.273;};
 
-value,NRJ,COmax,dPmax,emittance_norm,apbbeat,halor,halox,haloy,DParcx,DParcy;
-exec,adjsector(nir);
-exec,select(nir,$sec1,$sec2,bim);
+    value,NRJ,COmax,dPmax,emittance_norm,apbbeat,halor,halox,haloy,DParcx,DParcy;
+    exec, adjsector(nir);
+    exec, select(nir,$sec1,$sec2,bim);
 
-use,sequence=lhcbim,range=s.ds.lnir.bim/e.ds.rnir.bim;
-survey,file=temp/survey_irnirbim.tfs;
+    use,sequence=lhcbim,range=s.ds.lnir.bim/e.ds.rnir.bim;
+    survey,file=temp/survey_irnirbim.tfs;
+    select,flag=twiss,clear;
+    select,flag=twiss,
+           column=name,s,l,angle,k1l,k2l,hkick,vkick,kick,
+                  betx,bety,dx,dy,x,y,px,py,
+                  apertype,aper_1,aper_2,aper_3,aper_4,
+                  aptol_1,aptol_2,aptol_3,
+           range=s.ds.lnir.bim/e.ds.rnir.bim;
 
-select,flag=twiss,clear;
-select,flag=twiss,
-       column=name,s,l,angle,k1l,k2l,hkick,vkick,kick,
-              betx,bety,dx,dy,x,y,px,py,
-              apertype,aper_1,aper_2,aper_3,aper_4,
-              aptol_1,aptol_2,aptol_3,
-       range=s.ds.lnir.bim/e.ds.rnir.bim;
-if(FULL==0)
-{use,sequence=lhcbim,range=s.ds.lnir.bim/e.ds.rnir.bim;
-twiss,beta0=birnirbim,file=temp/twiss_irnirbim.tfs;
-};
+    if(FULL==0) {
+        use,sequence=lhcbim,range=s.ds.lnir.bim/e.ds.rnir.bim;
+        twiss,beta0=birnirbim,file=temp/twiss_irnirbim.tfs;
+    };
+    if(FULL==1) {
+        use,sequence=lhcbim;
+        twiss,file=temp/twiss_irnirbim.tfs;
+    };
+    system, "cp db5/aperture/offset.ip*b*.tfs  .";
 
-if(FULL==1)
-{use,sequence=lhcbim;
-twiss,file=temp/twiss_irnirbim.tfs;
-};
+    select,flag=aperture,clear;
+    select,flag=aperture,
+           column=name,s,betx,bety,dx,dy,x,y,n1,
+                 apertype,aper_1,aper_2,aper_3,aper_4,
+                 rtol,xtol,ytol;
 
-system, "cp db5/aperture/offset.ip*b*.tfs  .";
+    if (version >=50208) {
+       aperture,range=s.ds.lnir.bim/e.ds.rnir.bim,
+             offsetelem=./offset.IPnir.bim.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
+             halo={6,halor,halox,haloy},bbeat=apbbeat,
+             dparx=DParcx,dpary=DParcy,
+             file=temp/ap_irnirbim.tfs;
+    }
+    else {
+        aperture,range=s.ds.lnir.bim/e.ds.rnir.bim,
+             offsetelem=./offset.IPnir.bim.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
+             exn=emittance_norm,eyn=emittance_norm,
+             halo={6,halor,halox,haloy},bbeat=apbbeat,
+             dparx=DParcx,dpary=DParcy,
+             file=temp/ap_irnirbim.tfs;
+    };
+    !system, "rm offset.ip*b*.tfs";
 
-
-select,flag=aperture,clear;
-select,flag=aperture,
-       column=name,s,betx,bety,dx,dy,x,y,n1,
-             apertype,aper_1,aper_2,aper_3,aper_4,
-             rtol,xtol,ytol;
-if (version >=50208) {
-   aperture,range=s.ds.lnir.bim/e.ds.rnir.bim,
-         offsetelem=./offset.IPnir.bim.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
-         halo={6,halor,halox,haloy},bbeat=apbbeat,
-         dparx=DParcx,dpary=DParcy,
-         file=temp/ap_irnirbim.tfs;
-} else {
-  aperture,range=s.ds.lnir.bim/e.ds.rnir.bim,
-         offsetelem=./offset.IPnir.bim.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
-         exn=emittance_norm,eyn=emittance_norm,
-         halo={6,halor,halox,haloy},bbeat=apbbeat,
-         dparx=DParcx,dpary=DParcy,
-         file=temp/ap_irnirbim.tfs;
-};
-!system, "rm offset.ip*b*.tfs";
-
-if (SPECIF==9){
-  system,"db5/aperture/check_aperture.py temp/ap_irnirbim.tfs 0 9";
-};
-if (SPECIF==12){
-  system,"db5/aperture/check_aperture.py temp/ap_irnirbim.tfs 0 12";
-};
-
+    if (SPECIF==9){
+        system,"db5/aperture/check_aperture.py temp/ap_irnirbim.tfs 0 9";
+    };
+    if (SPECIF==12){
+        system,"db5/aperture/check_aperture.py temp/ap_irnirbim.tfs 0 12";
+    };
 };
 
 mk_aparc(NARC1,NARC2,BIM,NRJ) : macro ={
-exec,mk_beam(NRJ);
+    exec, mk_beam(NRJ);
+    use, sequence=lhcBIM,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM;
+    survey,file=temp/survey_arcNARC1NARC2BIM.tfs;
 
-use,sequence=lhcBIM,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM;
+    use,sequence=lhcBIM;
+    select,flag=twiss,clear;
+    select,flag=twiss,
+           column=name,s,l,angle,k1l,k2l,hkick,vkick,kick,
+                  betx,bety,dx,dy,x,y,px,py,
+                  apertype,aper_1,aper_2,aper_3,aper_4,
+                  aptol_1,aptol_2,aptol_3,
+           range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM;
+    twiss,file=temp/twiss_arcNARC1NARC2BIM.tfs;
 
-survey,file=temp/survey_arcNARC1NARC2BIM.tfs;
+    select,flag=aperture,clear;
+    select,flag=aperture,
+           column=name,s,betx,bety,dx,dy,x,y,n1,
+                 apertype,aper_1,aper_2,aper_3,aper_4,
+                 rtol,xtol,ytol;
 
-use,sequence=lhcBIM;
-select,flag=twiss,clear;
-select,flag=twiss,
-       column=name,s,l,angle,k1l,k2l,hkick,vkick,kick,
-              betx,bety,dx,dy,x,y,px,py,
-              apertype,aper_1,aper_2,aper_3,aper_4,
-              aptol_1,aptol_2,aptol_3,
-       range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM;
-twiss,file=temp/twiss_arcNARC1NARC2BIM.tfs;
-
-select,flag=aperture,clear;
-select,flag=aperture,
-       column=name,s,betx,bety,dx,dy,x,y,n1,
-             apertype,aper_1,aper_2,aper_3,aper_4,
-             rtol,xtol,ytol;
-if (version >=50208) {
-aperture,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
-         halo={6,halor,halox,haloy},bbeat=apbbeat,
-         dparx=DParcx,dpary=DParcy,
-         file=temp/ap_arcNARC1NARC2BIM.tfs;
-} else {
-  aperture,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
-         exn=emittance_norm,eyn=emittance_norm,
-         halo={6,halor,halox,haloy},bbeat=apbbeat,
-         dparx=DParcx,dpary=DParcy,
-         file=temp/ap_arcNARC1NARC2BIM.tfs;
+    if (version >=50208) {
+        aperture,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM,
+                 cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
+                 halo={6,halor,halox,haloy},bbeat=apbbeat,
+                 dparx=DParcx,dpary=DParcy,
+                 file=temp/ap_arcNARC1NARC2BIM.tfs;
+    }
+    else {
+        aperture,range=e.ds.rNARC1.BIM/s.ds.lNARC2.BIM,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=0.5,
+             exn=emittance_norm,eyn=emittance_norm,
+             halo={6,halor,halox,haloy},bbeat=apbbeat,
+             dparx=DParcx,dpary=DParcy,
+             file=temp/ap_arcNARC1NARC2BIM.tfs;
+    };
+    !system,"db5/aperture/check_aperture.py temp/ap_arcNARC1NARC2BIM.tfs";
 };
 
-!system,"db5/aperture/check_aperture.py temp/ap_arcNARC1NARC2BIM.tfs";
-};
 
 mk_apall(NRJ,FULL): macro ={
-exec,mk_apir(1,b1,NRJ,FULL);
-exec,mk_apir(2,b1,NRJ,FULL);
-exec,mk_apir(3,b1,NRJ,FULL);
-exec,mk_apir(4,b1,NRJ,FULL);
-exec,mk_apir(5,b1,NRJ,FULL);
-exec,mk_apir(6,b1,NRJ,FULL);
-exec,mk_apir(7,b1,NRJ,FULL);
-exec,mk_apir(8,b1,NRJ,FULL);
-exec,mk_apir(1,b2,NRJ,FULL);
-exec,mk_apir(2,b2,NRJ,FULL);
-exec,mk_apir(3,b2,NRJ,FULL);
-exec,mk_apir(4,b2,NRJ,FULL);
-exec,mk_apir(5,b2,NRJ,FULL);
-exec,mk_apir(6,b2,NRJ,FULL);
-exec,mk_apir(7,b2,NRJ,FULL);
-exec,mk_apir(8,b2,NRJ,FULL);
-exec,mk_aparc(8,1,b1,NRJ);
-exec,mk_aparc(1,2,b1,NRJ);
-exec,mk_aparc(4,5,b1,NRJ);
-exec,mk_aparc(5,6,b1,NRJ);
-exec,mk_aparc(8,1,b2,NRJ);
-exec,mk_aparc(1,2,b2,NRJ);
-exec,mk_aparc(4,5,b2,NRJ);
-exec,mk_aparc(5,6,b2,NRJ);
+    exec,mk_apir(1,b1,NRJ,FULL);
+    exec,mk_apir(2,b1,NRJ,FULL);
+    exec,mk_apir(3,b1,NRJ,FULL);
+    exec,mk_apir(4,b1,NRJ,FULL);
+    exec,mk_apir(5,b1,NRJ,FULL);
+    exec,mk_apir(6,b1,NRJ,FULL);
+    exec,mk_apir(7,b1,NRJ,FULL);
+    exec,mk_apir(8,b1,NRJ,FULL);
+    exec,mk_apir(1,b2,NRJ,FULL);
+    exec,mk_apir(2,b2,NRJ,FULL);
+    exec,mk_apir(3,b2,NRJ,FULL);
+    exec,mk_apir(4,b2,NRJ,FULL);
+    exec,mk_apir(5,b2,NRJ,FULL);
+    exec,mk_apir(6,b2,NRJ,FULL);
+    exec,mk_apir(7,b2,NRJ,FULL);
+    exec,mk_apir(8,b2,NRJ,FULL);
+    exec,mk_aparc(8,1,b1,NRJ);
+    exec,mk_aparc(1,2,b1,NRJ);
+    exec,mk_aparc(4,5,b1,NRJ);
+    exec,mk_aparc(5,6,b1,NRJ);
+    exec,mk_aparc(8,1,b2,NRJ);
+    exec,mk_aparc(1,2,b2,NRJ);
+    exec,mk_aparc(4,5,b2,NRJ);
+    exec,mk_aparc(5,6,b2,NRJ);
 };
-
-
-
-
-
 
 
 PLOT_DISPCO(BIM,icase): macro = {
- on_x1aux=on_x1;on_sep1aux=on_sep1;
- on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
- on_x5aux=on_x1;on_sep5aux=on_sep5;
- on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
- on_dispaux=on_disp;
- ic=icase;
- on_disp=1;
- on_x1:=1;on_x5:=1;on_sep1:=1;on_sep5:=1;
- if(ic==1) { on_x2:=0;on_x8:=0;on_sep2:=0;on_sep8:=0;on_lhcb:= 0;on_alice:=0;}
- if(ic==2) { on_x2:=1;on_x8:=1;on_sep2:=1;on_sep8:=1;on_lhcb:=-1;on_alice:=1;}
-use,sequence=lhcBIM;twiss;
-PLOT,STYLE=100,COLOUR=100,noline=true,noversion=true,TITLE=CO-BIM,HAXIS=S,VAXIS1=X,Y;
-PLOT,STYLE=100,COLOUR=100,noline=true,noversion=true,TITLE=Disp-BIM,HAXIS=S,VAXIS1=DX,DY;
- on_x1=on_x1aux;on_sep1=on_sep1aux;
- on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
- on_x5=on_x1aux;on_sep5=on_sep5aux;
- on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
- on_disp=on_dispaux;
+    on_x1aux=on_x1;on_sep1aux=on_sep1;
+    on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
+    on_x5aux=on_x1;on_sep5aux=on_sep5;
+    on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
+    on_dispaux=on_disp;
+    ic=icase;
+    on_disp=1;
+    on_x1:=1;on_x5:=1;on_sep1:=1;on_sep5:=1;
+
+    if(ic==1) { on_x2:=0;on_x8:=0;on_sep2:=0;on_sep8:=0;on_lhcb:= 0;on_alice:=0;}
+    if(ic==2) { on_x2:=1;on_x8:=1;on_sep2:=1;on_sep8:=1;on_lhcb:=-1;on_alice:=1;}
+
+    use,sequence=lhcBIM;twiss;
+    PLOT,STYLE=100,COLOUR=100,noline=true,noversion=true,TITLE=CO-BIM,HAXIS=S,VAXIS1=X,Y;
+    PLOT,STYLE=100,COLOUR=100,noline=true,noversion=true,TITLE=Disp-BIM,HAXIS=S,VAXIS1=DX,DY;
+    on_x1=on_x1aux;on_sep1=on_sep1aux;
+    on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
+    on_x5=on_x1aux;on_sep5=on_sep5aux;
+    on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
+    on_disp=on_dispaux;
 };
 
+
 PLOT_GLOBOPT(BIM,icase): macro = {
+    on_x1aux=on_x1;on_sep1aux=on_sep1;
+    on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
+    on_x5aux=on_x1;on_sep5aux=on_sep5;
+    on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
+    on_dispaux=on_disp;
+    ic=icase;
+    on_disp=1;
 
- on_x1aux=on_x1;on_sep1aux=on_sep1;
- on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
- on_x5aux=on_x1;on_sep5aux=on_sep5;
- on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
- on_dispaux=on_disp;
+    if(ic==1) { on_x1=0;on_x5=0;on_sep1=0;on_sep5=0;on_x2:=0;on_x8:=0;on_sep2:=0;on_sep8:=0;on_lhcb:= 0;on_alice:=0;}
+    if(ic==2) { on_x1=1;on_x5=1;on_sep1=1;on_sep5=1;on_x2:=1;on_x8:=1;on_sep2:=1;on_sep8:=1;on_lhcb:=-1;on_alice:=1;}
 
- ic=icase;
- on_disp=1;
+    use,sequence=lhcBIM;twiss;
+    PLOT,colour=100,noversion=true,noline=true,marker_plot=true,TITLE=lhcBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
 
-
- if(ic==1) { on_x1=0;on_x5=0;on_sep1=0;on_sep5=0;on_x2:=0;on_x8:=0;on_sep2:=0;on_sep8:=0;on_lhcb:= 0;on_alice:=0;}
- if(ic==2) { on_x1=1;on_x5=1;on_sep1=1;on_sep5=1;on_x2:=1;on_x8:=1;on_sep2:=1;on_sep8:=1;on_lhcb:=-1;on_alice:=1;}
-
-use,sequence=lhcBIM;twiss;
-PLOT,colour=100,noversion=true,noline=true,marker_plot=true,TITLE=lhcBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
-
- on_x1=on_x1aux;on_sep1=on_sep1aux;
- on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
- on_x5=on_x1aux;on_sep5=on_sep5aux;
- on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
- on_disp=on_dispaux;
+    on_x1=on_x1aux;on_sep1=on_sep1aux;
+    on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
+    on_x5=on_x1aux;on_sep5=on_sep5aux;
+    on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
+    on_disp=on_dispaux;
 };
 
 
 PLOT_AP(NIR,BIM,NRJ,FULL): macro = {
 
-Beam,particle=proton,sequence=lhcb1,energy=NRJ,
-      NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
-Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv =-1,
-      NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
+    Beam,particle=proton,sequence=lhcb1,energy=NRJ,NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
+    Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv =-1,NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
 
-if(NRJ <3499.99)
-{ COmax:=0.004; dPmax=0.00150; VMAXI=30; SPECIF=7; };
-if(NRJ >3499.99)
-{ COmax:=0.003; dPmax=0.00086; VMAXI=30; SPECIF=7;  };
+    if(NRJ <3499.99) { COmax:=0.004; dPmax=0.00150; VMAXI=30; SPECIF=7; };
+    if(NRJ >3499.99) { COmax:=0.003; dPmax=0.00086; VMAXI=30; SPECIF=7;  };
 
-exec adjsector(NIR);
-exec select(NIR,$sec1,$sec2,BIM);
+    exec adjsector(NIR);
+    exec select(NIR,$sec1,$sec2,BIM);
 
-if(FULL==0)
-{use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,
-       range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-twiss,beta0=birNIRBIM,file=twn_irNIR_BIM_NRJ;
+    if(FULL==0) {
+        use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        select,flag=twiss,clear;
+        select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        twiss,beta0=birNIRBIM,file=twn_irNIR_BIM_NRJ;
+    };
+    if(FULL==1) {
+        use,sequence=lhcBIM;
+        select,flag=twiss,clear;
+        select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1, range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        twiss,file=twn_irNIR_BIM_NRJ;
+    };
+
+    system, "cp db5/aperture/offset.ip*b*.tfs  . ";
+
+    if(NRJ <3499.99) {
+        select,flag=aperture,clear;
+        select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
+        aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
+             offsetelem=./offset.IPNIR.BIM.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
+    };
+    if(NRJ >3499.99) {
+        select,flag=aperture,clear;
+        select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
+        aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
+             offsetelem=./offset.IPNIR.BIM.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
+    };
+
+    plot,TITLE=IPNIRBIM,table=aperture,marker_plot,noline, haxis=s,vaxis=on_elem, n1,spec,vmin=0,vmax=VMAXI,colour=100;
+    system, "rm offset.ip*b*.tfs";
+    !system "db5/toolkit/check_aperture.py ap_irNIRBIM_NRJ";
 };
 
-if(FULL==1)
-{use,sequence=lhcBIM;
-select,flag=twiss,clear;
-select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,
-       range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-twiss,file=twn_irNIR_BIM_NRJ;
-};
-
-system, "cp db5/aperture/offset.ip*b*.tfs  . ";
-
-if(NRJ <3499.99)
-{select,flag=aperture,clear;
- select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
- aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
-         offsetelem=./offset.IPNIR.BIM.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
-};
-if(NRJ >3499.99)
-{select,flag=aperture,clear;
- select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
- aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
-         offsetelem=./offset.IPNIR.BIM.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
-};
-
-plot,TITLE=IPNIRBIM,table=aperture,marker_plot,
-      noline, haxis=s,vaxis=on_elem, n1,spec,vmin=0,vmax=VMAXI,colour=100;
-
-system, "rm offset.ip*b*.tfs";
-!system "db5/toolkit/check_aperture.py ap_irNIRBIM_NRJ";
-};
 
 SELECT_BACK(NIR,sec1,sec2,BIM): macro = {
-exec select(NIR,sec1,sec2,BIM);
-exec backtrack_twiss(s.ds.lNIR.BIM,e.ds.rNIR.BIM,BIM,birNIRBIM,eirNIRBIM);};
+    exec select(NIR,sec1,sec2,BIM);
+    exec backtrack_twiss(s.ds.lNIR.BIM,e.ds.rNIR.BIM,BIM,birNIRBIM,eirNIRBIM);
+};
+
 
 SELECT1(NIR,BIM): macro = {
-
-NIaux=NIR;
-
-if(NIaux==3) {exec select(3,23,34,BIM);};
-if(NIaux==7) {exec select(7,67,78,BIM);};
-if(NIaux==4) {exec select(4,34,45,BIM);};
-if(NIaux==8) {exec select(8,78,81,BIM);};
-if(NIaux==6) {exec select_back(6,56,67,BIM);};
-if(NIaux==2) {exec select_back(2,12,23,BIM);};
-if(NIaux==1)
-{
-exec select(8,78,81,BIM);
-exec track_twiss(s.ds.l8.BIM,s.ds.l1.BIM,BIM,bir8BIM,bir1BIM);
-exec select(2,12,23,BIM);
-exec backtrack_twiss(e.ds.r1.BIM,e.ds.r2.BIM,BIM,eir1BIM,eir2BIM);
-};
-
-if(NIaux==5)
-{
-exec select(4,34,45,BIM);
-exec track_twiss(s.ds.l4.BIM,s.ds.l5.BIM,BIM,bir4BIM,bir5BIM);
-exec select(6,56,67,BIM);
-exec backtrack_twiss(e.ds.r5.BIM,e.ds.r6.BIM,BIM,eir5BIM,eir6BIM);
-};
-
+    NIaux=NIR;
+    if(NIaux==3) {exec select(3,23,34,BIM);};
+    if(NIaux==7) {exec select(7,67,78,BIM);};
+    if(NIaux==4) {exec select(4,34,45,BIM);};
+    if(NIaux==8) {exec select(8,78,81,BIM);};
+    if(NIaux==6) {exec select_back(6,56,67,BIM);};
+    if(NIaux==2) {exec select_back(2,12,23,BIM);};
+    if(NIaux==1) {
+        exec select(8,78,81,BIM);
+        exec track_twiss(s.ds.l8.BIM,s.ds.l1.BIM,BIM,bir8BIM,bir1BIM);
+        exec select(2,12,23,BIM);
+        exec backtrack_twiss(e.ds.r1.BIM,e.ds.r2.BIM,BIM,eir1BIM,eir2BIM);
+    };
+    if(NIaux==5) {
+        exec select(4,34,45,BIM);
+        exec track_twiss(s.ds.l4.BIM,s.ds.l5.BIM,BIM,bir4BIM,bir5BIM);
+        exec select(6,56,67,BIM);
+        exec backtrack_twiss(e.ds.r5.BIM,e.ds.r6.BIM,BIM,eir5BIM,eir6BIM);
+    };
 };
 
 
 selectIR15(NIR,SEC1,SEC2,BIM): macro = {
+    mk14L:marker;mk15L:marker;mk14R:marker;mk15R:marker;
+    option,info,warn;
+    seqedit,sequence=lhcBIM;
+    install,element=mk14L,at=l.ms/2.,from=MS.14LNIR.BIM;
+    install,element=mk15L,at=l.ms/2.,from=MS.15LNIR.BIM;
+    install,element=mk15R,at=-l.ms/2.,from=MS.15RNIR.BIM;
+    install,element=mk14R,at=-l.ms/2.,from=MS.14RNIR.BIM;
+    endedit;
+    option,-info,-warn;
 
-mk14L:marker;mk15L:marker;mk14R:marker;mk15R:marker;
-option,info,warn;
-seqedit,sequence=lhcBIM;
-install,element=mk14L,at=l.ms/2.,from=MS.14LNIR.BIM;
-install,element=mk15L,at=l.ms/2.,from=MS.15LNIR.BIM;
-install,element=mk15R,at=-l.ms/2.,from=MS.15RNIR.BIM;
-install,element=mk14R,at=-l.ms/2.,from=MS.14RNIR.BIM;
-endedit;
-option,-info,-warn;
+    !Left
+    use,sequence=lhcBIM,range=s.cell.SEC1.BIM/e.cell.SEC1.BIM;
+    savebeta,label=baux,place=s.cell.SEC1.BIM;
+    twiss;
 
-!Left
-use,sequence=lhcBIM,range=s.cell.SEC1.BIM/e.cell.SEC1.BIM;
-savebeta,label=baux,place=s.cell.SEC1.BIM;
-twiss;
+    exec track_twiss(e.cell.SEC1.BIM,s.ds.lNIR.BIM,BIM,baux,birNIRBIM);
+    betx0=table(twiss,mk14L,betx);bety0=table(twiss,mk14L,bety);
+    if (betx0 > bety0) {
+        birNIRBIM->mux=table(twiss,s.ds.lNIR.BIM,mux)-table(twiss,mk14L,mux);
+        birNIRBIM->muy=table(twiss,s.ds.lNIR.BIM,muy)-table(twiss,mk15L,muy);
+    }
+    if (betx0 < bety0) {
+        birNIRBIM->mux=table(twiss,s.ds.lNIR.BIM,mux)-table(twiss,mk15L,mux);
+        birNIRBIM->muy=table(twiss,s.ds.lNIR.BIM,muy)-table(twiss,mk14L,muy);
+     }
 
-exec track_twiss(e.cell.SEC1.BIM,s.ds.lNIR.BIM,BIM,baux,birNIRBIM);
-betx0=table(twiss,mk14L,betx);bety0=table(twiss,mk14L,bety);
-if (betx0 > bety0)
-{birNIRBIM->mux=table(twiss,s.ds.lNIR.BIM,mux)-table(twiss,mk14L,mux);
- birNIRBIM->muy=table(twiss,s.ds.lNIR.BIM,muy)-table(twiss,mk15L,muy);}
-if (betx0 < bety0)
-{birNIRBIM->mux=table(twiss,s.ds.lNIR.BIM,mux)-table(twiss,mk15L,mux);
- birNIRBIM->muy=table(twiss,s.ds.lNIR.BIM,muy)-table(twiss,mk14L,muy);}
+    !right
+    use,sequence=lhcBIM,range=s.cell.SEC2.BIM/e.cell.SEC2.BIM;
+    savebeta,label=baux,place=s.cell.SEC2.BIM;
+    twiss;
 
-!right
-use,sequence=lhcBIM,range=s.cell.SEC2.BIM/e.cell.SEC2.BIM;
-savebeta,label=baux,place=s.cell.SEC2.BIM;
-twiss;
+    exec backtrack_twiss(e.ds.rNIR.BIM,s.cell.SEC2.BIM,BIM,eirNIRBIM,baux);
+    betx0=table(twiss,mk14R,betx);bety0=table(twiss,mk14R,bety);
+    if (betx0 > bety0) {
+        eirNIRBIM->mux=table(twiss,mk14R,mux)-table(twiss,e.ds.rNIR.BIM,mux);
+        eirNIRBIM->muy=table(twiss,mk15R,muy)-table(twiss,e.ds.rNIR.BIM,muy);
+     }
+    if (betx0 < bety0) {
+        eirNIRBIM->mux=table(twiss,mk15R,mux)-table(twiss,e.ds.rNIR.BIM,mux);
+        eirNIRBIM->muy=table(twiss,mk14R,muy)-table(twiss,e.ds.rNIR.BIM,muy);
+     }
 
-exec backtrack_twiss(e.ds.rNIR.BIM,s.cell.SEC2.BIM,BIM,eirNIRBIM,baux);
-betx0=table(twiss,mk14R,betx);bety0=table(twiss,mk14R,bety);
-if (betx0 > bety0)
-{eirNIRBIM->mux=table(twiss,mk14R,mux)-table(twiss,e.ds.rNIR.BIM,mux);
- eirNIRBIM->muy=table(twiss,mk15R,muy)-table(twiss,e.ds.rNIR.BIM,muy);}
-if (betx0 < bety0)
-{eirNIRBIM->mux=table(twiss,mk15R,mux)-table(twiss,e.ds.rNIR.BIM,mux);
- eirNIRBIM->muy=table(twiss,mk14R,muy)-table(twiss,e.ds.rNIR.BIM,muy);}
-
-option,info,warn;
-seqedit,sequence=lhcBIM;
-remove,element=mk14L;
-remove,element=mk15L;
-remove,element=mk15R;
-remove,element=mk14R;
-endedit;
-option,-info,-warn;
-
+    option,info,warn;
+    seqedit,sequence=lhcBIM;
+    remove,element=mk14L;
+    remove,element=mk15L;
+    remove,element=mk15R;
+    remove,element=mk14R;
+    endedit;
+    option,-info,-warn;
 };
+
 
 selectIRAUX(NIR0,NIR1,NIR2,NIR3,NIR4,BIM,scbx,scby,betx0,bety0): macro = {
+    !LeftIRauxR & RightIRauxL
+    use,sequence=lhcBIM,range=IPNIR2/IPNIR2;
+    savebeta,label=baux,place=IPNIR2;
+    twiss,betx=betx0,bety=bety0;
 
-!LeftIRauxR & RightIRauxL
+    exec track_twiss(IPNIR2,s.ds.lNIR3.BIM,BIM,baux,birNIR3BIM);
+    mux0r=birNIR3BIM->mux;muy0r=birNIR3BIM->muy;
+    exec backtrack_twiss(e.ds.rNIR1.BIM,IPNIR2,BIM,eirNIR1BIM,baux);
+    mux0l=eirNIR1BIM->mux;muy0l=eirNIR1BIM->muy;
 
-use,sequence=lhcBIM,range=IPNIR2/IPNIR2;
-savebeta,label=baux,place=IPNIR2;
-twiss,betx=betx0,bety=bety0;
+    use,sequence=lhcBIM,range=IPNIR2/IPNIR2;
+    savebeta,label=baux,place=IPNIR2;
+    twiss,betx=scbx*betx0,bety=scby*bety0;
+    exec track_twiss(IPNIR2,s.ds.lNIR3.BIM,BIM,baux,birNIR3BIM);
+    mux1r=birNIR3BIM->mux;muy1r=birNIR3BIM->muy;
+    birNIR3BIM->mux=mux0r-mux1r;birNIR3BIM->muy=muy0r-muy1r;
+    exec backtrack_twiss(e.ds.rNIR1.BIM,IPNIR2,BIM,eirNIR1BIM,baux);
+    mux1l=eirNIR1BIM->mux;muy1l=eirNIR1BIM->muy;
+    eirNIR1BIM->mux=mux0l-mux1l;eirNIR1BIM->muy=muy0l-muy1l;
 
-exec track_twiss(IPNIR2,s.ds.lNIR3.BIM,BIM,baux,birNIR3BIM);
-mux0r=birNIR3BIM->mux;muy0r=birNIR3BIM->muy;
-exec backtrack_twiss(e.ds.rNIR1.BIM,IPNIR2,BIM,eirNIR1BIM,baux);
-mux0l=eirNIR1BIM->mux;muy0l=eirNIR1BIM->muy;
+    !LeftIRlowbeta & RightIRlowbeta
+    exec track_twiss(IPNIR2,e.ds.rNIR2.BIM,BIM,baux,eirNIR2BIM);
+    exec backtrack_twiss(s.ds.lNIR2.BIM,IPNIR2,BIM,birNIR2BIM,baux);
 
-use,sequence=lhcBIM,range=IPNIR2/IPNIR2;
-savebeta,label=baux,place=IPNIR2;
-twiss,betx=scbx*betx0,bety=scby*bety0;
-exec track_twiss(IPNIR2,s.ds.lNIR3.BIM,BIM,baux,birNIR3BIM);
-mux1r=birNIR3BIM->mux;muy1r=birNIR3BIM->muy;
-birNIR3BIM->mux=mux0r-mux1r;birNIR3BIM->muy=muy0r-muy1r;
-exec backtrack_twiss(e.ds.rNIR1.BIM,IPNIR2,BIM,eirNIR1BIM,baux);
-mux1l=eirNIR1BIM->mux;muy1l=eirNIR1BIM->muy;
-eirNIR1BIM->mux=mux0l-mux1l;eirNIR1BIM->muy=muy0l-muy1l;
+    !LeftIRauxL
+    use,sequence=lhcBIM,range=s.cell.NIR0NIR1.BIM/e.cell.NIR0NIR1.BIM;
+    savebeta,label=baux,place=s.cell.NIR0NIR1.BIM;
+    twiss;
+    exec track_twiss(e.cell.NIR0NIR1.BIM,s.ds.lNIR1.BIM,BIM,baux,birNIR1BIM);
+    birNIR1BIM->mux=0;birNIR1BIM->muy=0;
 
-!LeftIRlowbeta & RightIRlowbeta
-exec track_twiss(IPNIR2,e.ds.rNIR2.BIM,BIM,baux,eirNIR2BIM);
-exec backtrack_twiss(s.ds.lNIR2.BIM,IPNIR2,BIM,birNIR2BIM,baux);
-
-!LeftIRauxL
-
-use,sequence=lhcBIM,range=s.cell.NIR0NIR1.BIM/e.cell.NIR0NIR1.BIM;
-savebeta,label=baux,place=s.cell.NIR0NIR1.BIM;
-twiss;
-exec track_twiss(e.cell.NIR0NIR1.BIM,s.ds.lNIR1.BIM,BIM,baux,birNIR1BIM);
-birNIR1BIM->mux=0;birNIR1BIM->muy=0;
-
-!RightIRauxR
-use,sequence=lhcBIM,range=s.cell.NIR3NIR4.BIM/e.cell.NIR3NIR4.BIM;
-savebeta,label=baux,place=s.cell.NIR3NIR4.BIM;
-twiss;
-exec backtrack_twiss(e.ds.rNIR3.BIM,s.cell.NIR3NIR4.BIM,BIM,eirNIR3BIM,baux);
-eirNIR3BIM->mux=birNIR3BIM->mux;birNIR3BIM->mux=0;
-eirNIR3BIM->muy=birNIR3BIM->muy;birNIR3BIM->muy=0;
-
+    !RightIRauxR
+    use,sequence=lhcBIM,range=s.cell.NIR3NIR4.BIM/e.cell.NIR3NIR4.BIM;
+    savebeta,label=baux,place=s.cell.NIR3NIR4.BIM;
+    twiss;
+    exec backtrack_twiss(e.ds.rNIR3.BIM,s.cell.NIR3NIR4.BIM,BIM,eirNIR3BIM,baux);
+    eirNIR3BIM->mux=birNIR3BIM->mux;birNIR3BIM->mux=0;
+    eirNIR3BIM->muy=birNIR3BIM->muy;birNIR3BIM->muy=0;
 };
+
 
 PLOT_OPT1(NIR,BIM): macro = {
-
-exec select1(NIR,BIM);
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
-twiss,beta0=birNIRBIM,save,file=twiss.aux;
-System,"cat twiss.aux";
-System,"rm twiss.aux";
-PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
+    exec select1(NIR,BIM);
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    select,flag=twiss,clear;
+    select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
+    twiss,beta0=birNIRBIM,save,file=twiss.aux;
+    System,"cat twiss.aux";
+    System,"rm twiss.aux";
+    PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX;
 };
+
 
 PLOT_OPT1_BIS(NIR,BIM,bst1x1,bst2x1,bst1y1,bst2y1,vmaxbeta,vmindisp,vmaxdisp): macro = {
-
-exec select1(NIR,BIM);
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
-twiss,beta0=birNIRBIM,save,file=twiss.aux;
-System,"cat twiss.aux";
-System,"rm twiss.aux";
-PLOT,colour=100,noversion=true,
-TITLE=IRNIRBIM: beta*_x/y = bst1x1.bst2x1/bst1y1.bst2y1,
-HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX,vmin=0,vmindisp,vmax=vmaxbeta,vmaxdisp;
+    exec select1(NIR,BIM);
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    select,flag=twiss,clear;
+    select, flag=twiss,pattern="IP",column=name,betx,bety,dx,mux,muy;
+    twiss,beta0=birNIRBIM,save,file=twiss.aux;
+    System,"cat twiss.aux";
+    System,"rm twiss.aux";
+    PLOT,colour=100,noversion=true,
+    TITLE=IRNIRBIM: beta*_x/y = bst1x1.bst2x1/bst1y1.bst2y1,
+    HAXIS=S,VAXIS1=BETX,BETY,VAXIS2=DX,vmin=0,vmindisp,vmax=vmaxbeta,vmaxdisp;
 };
 
-PLOT_XING1(NIR,BIM): macro = {
 
-exec select1(NIR,BIM);
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select, flag=twiss,pattern="IP",column=name,betx,bety,x,py,y,px;
-twiss,beta0=birNIRBIM,save,file=twiss.aux;
-System,"cat twiss.aux";
-System,"rm twiss.aux";
-PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=X,Y;
+PLOT_XING1(NIR,BIM): macro = {
+    exec select1(NIR,BIM);
+    use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+    select,flag=twiss,clear;
+    select, flag=twiss,pattern="IP",column=name,betx,bety,x,py,y,px;
+    twiss,beta0=birNIRBIM,save,file=twiss.aux;
+    System,"cat twiss.aux";
+    System,"rm twiss.aux";
+    PLOT,colour=100,noversion=true,TITLE=IPNIRBIM,HAXIS=S,VAXIS1=X,Y;
 };
 
 PLOT_AP1(NIR,BIM,NRJ,FULL): macro = {
+    Beam,particle=proton,sequence=lhcb1,energy=NRJ,NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
+    Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv=-1,NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
 
-Beam,particle=proton,sequence=lhcb1,energy=NRJ,
-      NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
-Beam,particle=proton,sequence=lhcb2,energy=NRJ,bv =-1,
-      NPART=1.15E11,sige=4.5e-4*sqrt(450./NRJ);
+    if(NRJ <3499.99) { COmax:=0.004; dPmax=0.00150; VMAXI=30; SPECIF=7; };
+    if(NRJ >3499.99) { COmax:=0.003; dPmax=0.00086; VMAXI=30; SPECIF=7;  };
 
-if(NRJ <3499.99)
-{ COmax:=0.004; dPmax=0.00150; VMAXI=30; SPECIF=7; };
-if(NRJ >3499.99)
-{ COmax:=0.003; dPmax=0.00086; VMAXI=30; SPECIF=7;  };
+    if(FULL==0) {
+        on_x1aux=on_x1;on_sep1aux=on_sep1;
+        on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
+        on_x5aux=on_x1;on_sep5aux=on_sep5;
+        on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
+        on_dispaux=on_disp;
+        on_x1=0;on_x5=0;on_sep1=0;on_sep5=0;
+        on_x2=0;on_x8=0;on_sep2=0;on_sep8=0;on_lhcb=0;on_alice=0;
+        on_disp=0;
+        exec select1(NIR,BIM);
+        on_x1=on_x1aux;on_sep1=on_sep1aux;
+        on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
+        on_x5=on_x1aux;on_sep5=on_sep5aux;
+        on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
+        use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        select,flag=twiss,clear;
+        select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        twiss,beta0=birNIRBIM,file=twn_irNIR_BIM_NRJ;
+    };
+    if(FULL==1) {
+        use,sequence=lhcBIM;
+        select,flag=twiss,clear;
+        select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
+        twiss,file=twn_irNIR_BIM_NRJ;
+    };
+    system, "cp db5/aperture/offset.ip*b*.tfs  . ";
 
+    if(NRJ <3499.99) {
+        select,flag=aperture,clear;
+        select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
+        aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
+             offsetelem=./offset.IPNIR.BIM.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
+    };
+    if(NRJ >3499.99) {
+        select,flag=aperture,clear;
+        select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
+        aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
+             offsetelem=./offset.IPNIR.BIM.tfs,
+             cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
+    };
 
-
-if(FULL==0)
-{
- on_x1aux=on_x1;on_sep1aux=on_sep1;
- on_x2aux=on_x2;on_sep2aux=on_sep2;on_aliceaux=on_alice;
- on_x5aux=on_x1;on_sep5aux=on_sep5;
- on_x8aux=on_x2;on_sep8aux=on_sep8;on_lhcbaux=on_lhcb;
- on_dispaux=on_disp;
- on_x1=0;on_x5=0;on_sep1=0;on_sep5=0;
- on_x2=0;on_x8=0;on_sep2=0;on_sep8=0;on_lhcb=0;on_alice=0;
- on_disp=0;
- exec select1(NIR,BIM);
- on_x1=on_x1aux;on_sep1=on_sep1aux;
- on_x2=on_x2aux;on_sep2=on_sep2aux;on_alice=on_aliceaux;
- on_x5=on_x1aux;on_sep5=on_sep5aux;
- on_x8=on_x2aux;on_sep8=on_sep8aux;on_lhcb=on_lhcbaux;
-use,sequence=lhcBIM,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-select,flag=twiss,clear;
-select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,
-       range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-twiss,beta0=birNIRBIM,file=twn_irNIR_BIM_NRJ;
-};
-
-if(FULL==1)
-{use,sequence=lhcBIM;
-select,flag=twiss,clear;
-select,flag=twiss,column=name,s,betx,bety,dx,dy,x,y,n1,
-       range=s.ds.lNIR.BIM/e.ds.rNIR.BIM;
-twiss,file=twn_irNIR_BIM_NRJ;
-};
-
-system, "cp db5/aperture/offset.ip*b*.tfs  . ";
-
-
-if(NRJ <3499.99)
-{select,flag=aperture,clear;
- select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
- aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
-         offsetelem=./offset.IPNIR.BIM.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
-};
-if(NRJ >3499.99)
-{select,flag=aperture,clear;
- select,flag=aperture,column=name,s,betx,bety,dx,dy,x,y,n1,apertype,Rtol,xtol,ytol;
- aperture,range=s.ds.lNIR.BIM/e.ds.rNIR.BIM,
-         offsetelem=./offset.IPNIR.BIM.tfs,
-         cor=COmax, dp=dPmax, spec=SPECIF,interval=1.0,file=ap_irNIRBIM_NRJ;
-};
-
-plot,TITLE=IPNIRBIM,table=aperture,marker_plot,
-      noline, haxis=s,vaxis=on_elem, n1,spec,vmin=0,vmax=VMAXI,colour=100;
-
-if(FULL==0) {on_disp=on_dispaux;};
-
-system, "rm offset.ip*b*.tfs";
-
+    plot,TITLE=IPNIRBIM,table=aperture,marker_plot,noline, haxis=s,vaxis=on_elem, n1,spec,vmin=0,vmax=VMAXI,colour=100;
+    if(FULL==0) {on_disp=on_dispaux;};
+    system, "rm offset.ip*b*.tfs";
 };
 
 
 cellphase(NIR1,NIR2,SEC,BIM): macro = {
-
-use,sequence=lhcBIM,range=s.cell.SEC.BIM/e.cell.SEC.BIM;
-savebeta,label=baux,place=s.cell.SEC.BIM;
-twiss;
-muxcellSECBIM=table(summ,q1);muycellSECBIM=table(summ,q2);
-
+    use,sequence=lhcBIM,range=s.cell.SEC.BIM/e.cell.SEC.BIM;
+    savebeta,label=baux,place=s.cell.SEC.BIM;
+    twiss;
+    muxcellSECBIM=table(summ,q1);muycellSECBIM=table(summ,q2);
 };
 
+
 phasearc(NIR1,NIR2,SEC,BIM): macro = {
-
-exec cellphase(NIR1,NIR2,SEC,BIM);
-
-exec backtrack_twiss(e.ds.rNIR1.BIM,s.cell.SEC.BIM,BIM,eirNIR1auxBIM,baux);
-eirNIR1auxBIM->mux=0;eirNIR1auxBIM->muy=0;
-exec track_twiss(e.ds.rNIR1.BIM,s.ds.lNIR2.BIM,BIM,eirNIR1auxBIM,sirNIR2auxBIM);
-muxSECBIM=sirNIR2auxBIM->mux;muySECBIM=sirNIR2auxBIM->muy;
-
+    exec cellphase(NIR1,NIR2,SEC,BIM);
+    exec backtrack_twiss(e.ds.rNIR1.BIM,s.cell.SEC.BIM,BIM,eirNIR1auxBIM,baux);
+    eirNIR1auxBIM->mux=0;eirNIR1auxBIM->muy=0;
+    exec track_twiss(e.ds.rNIR1.BIM,s.ds.lNIR2.BIM,BIM,eirNIR1auxBIM,sirNIR2auxBIM);
+    muxSECBIM=sirNIR2auxBIM->mux;muySECBIM=sirNIR2auxBIM->muy;
 };
 
 globalphasearcweak(BIM): macro = {
@@ -3613,42 +3576,42 @@ KOD.A78B2:=Kmax_MO*I_MOD/Imax_MO/brho; KOD.A81B2:=Kmax_MO*I_MOD/Imax_MO/brho;
 I_MOF:=I_MO; I_MOD:=I_MO;
 };
 
-mk_foot(nsigmax,fname): macro={
-small=0.05;
-big=sqrt(1.-small^2);
-track;
-xs=small; ys=small;
-start,fx=xs,fy=ys;  // zero amplitude
-n=1; // sigma multiplier
-m=0; // angle multiplier
-while (n <= nsigmax)
-{
-  angle = 15*m*pi/180;
-  if (m == 0) {xs=n*big; ys=n*small;}
-  elseif (m == 6) {xs=n*small; ys=n*big;}
-  else
-  {
-    xs=n*cos(angle);
-    ys=n*sin(angle);
-  }
-  value,xs,ys;
-  start,fx=xs,fy=ys;
-  m=m+1;
-  if (m == 7) { m=0; n=n+1;}
-};
-dynap,fastune,turns=1024;
-endtrack;
-!write,table=dynap,    file="dynap.tfs";
-write,table=dynaptune,file="fname";
+mk_foot(nsigmax,fname): macro = {
+    small=0.05;
+    big=sqrt(1.-small^2);
+    track;
+    xs=small; ys=small;
+    start,fx=xs,fy=ys;  // zero amplitude
+    n=1; // sigma multiplier
+    m=0; // angle multiplier
+    while (n <= nsigmax)
+    {
+      angle = 15*m*pi/180;
+      if (m == 0) {xs=n*big; ys=n*small;}
+      elseif (m == 6) {xs=n*small; ys=n*big;}
+      else
+      {
+        xs=n*cos(angle);
+        ys=n*sin(angle);
+      }
+      value,xs,ys;
+      start,fx=xs,fy=ys;
+      m=m+1;
+      if (m == 7) { m=0; n=n+1;}
+    };
+    dynap,fastune,turns=1024;
+    endtrack;
+    !write,table=dynap,    file="dynap.tfs";
+    write,table=dynaptune,file="fname";
 };
 
 
 check_knob(kkkk,vvvv): macro={
-kkkk=1;
-exec,check_ip(b1); check_vvvvb1=vvvvb1;
-exec,check_ip(b2); check_vvvvb2=vvvvb2;
-kkkk=0;
-value,check_vvvvb1,check_vvvvb2;
+    kkkk=1;
+    exec,check_ip(b1); check_vvvvb1=vvvvb1;
+    exec,check_ip(b2); check_vvvvb2=vvvvb2;
+    kkkk=0;
+    value,check_vvvvb1,check_vvvvb2;
 };
 
 
