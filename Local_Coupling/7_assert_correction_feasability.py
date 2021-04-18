@@ -154,10 +154,10 @@ def make_simulation(tilt_mean: float = 0.0, seeds: int = 50) -> Results:
             madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
 
             logger.debug("Calling optics")
-            # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-            # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-            madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-            madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+            madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+            madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+            # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
+            # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
             special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
             orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
