@@ -22,7 +22,11 @@ PATHS = {
 }
 
 defaults.config_logger(level="INFO")
-logger.add(PATHS["htc_outputdir"] / "full_pylog.log", format=defaults.LOGURU_FORMAT, level="TRACE")
+logger.add(
+    PATHS["htc_outputdir"] / "full_pylog.log",
+    format=defaults.LOGURU_FORMAT,
+    level="TRACE",
+)
 
 
 # ----- Utilities ----- #
@@ -90,7 +94,15 @@ def make_simulation(
         # Widen tune split first to avoid a tune flip when applying knobs
         matching.match_tunes_and_chromaticities(
             # madx, "lhc", "lhcb1", 62.27, 60.36, 2.0, 2.0, telescopic_squeeze=True
-            madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=500, telescopic_squeeze=True
+            madx,
+            "lhc",
+            "lhcb1",
+            62.31,
+            60.32,
+            2.0,
+            2.0,
+            calls=500,
+            telescopic_squeeze=True,
         )
 
         logger.info("Applying tilt error to Q1s")
@@ -104,7 +116,15 @@ def make_simulation(
         special.apply_lhc_colinearity_knob(madx, colinearity_knob_value=colinearity_knob, ir=1)
         special.apply_lhc_rigidity_waist_shift_knob(madx, rigidty_waist_shift_value=rigidity_knob, ir=1)
         matching.match_tunes_and_chromaticities(
-            madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=500, telescopic_squeeze=True,
+            madx,
+            "lhc",
+            "lhcb1",
+            62.31,
+            60.32,
+            2.0,
+            2.0,
+            calls=500,
+            telescopic_squeeze=True,
         )
         dqmin_cta = matching.get_closest_tune_approach(madx, "lhc", "lhcb1", telescopic_squeeze=True)
         twiss_tfs = twiss.get_twiss_tfs(madx)

@@ -87,7 +87,15 @@ def make_simulation(colin_knob: float = 0.0, rigidity_knob: float = 0.0) -> Resu
     special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
     madx.use(sequence="lhcb1")
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", 62.27, 60.36, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
+        madx,
+        "lhc",
+        "lhcb1",
+        62.27,
+        60.36,
+        chrom_x,
+        chrom_y,
+        calls=200,
+        telescopic_squeeze=True,
     )  # if no slicing, tunes need to be very apart to avoid a tune flip when applying the knobs
 
     logger.info("Setting up colinearity and rigidity waist shift knobs for IR1")
@@ -95,7 +103,15 @@ def make_simulation(colin_knob: float = 0.0, rigidity_knob: float = 0.0) -> Resu
     special.apply_lhc_rigidity_waist_shift_knob(madx, rigidty_waist_shift_value=rigidity_knob, ir=1)
     madx.twiss(chrom=True, ripken=True)
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", tune_x, tune_y, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
+        madx,
+        "lhc",
+        "lhcb1",
+        tune_x,
+        tune_y,
+        chrom_x,
+        chrom_y,
+        calls=200,
+        telescopic_squeeze=True,
     )  # after knobs we can match to the real desired working point
 
     logger.info("Executing Closest Tune Approach\n")

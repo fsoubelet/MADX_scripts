@@ -107,14 +107,30 @@ def make_simulation(coupling_knob: float = 0.0) -> Results:
     logger.info("Applying coupling knob and matching working point")
     special.apply_lhc_coupling_knob(madx, coupling_knob=coupling_knob, telescopic_squeeze=True)
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", tune_x, tune_y, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
+        madx,
+        "lhc",
+        "lhcb1",
+        tune_x,
+        tune_y,
+        chrom_x,
+        chrom_y,
+        calls=200,
+        telescopic_squeeze=True,
     )
     correct_machine = madx.table.twiss.dframe().copy()
 
     logger.info("Applying rigidity waist shift knob, matching working point & getting closest tune approach")
     special.apply_lhc_rigidity_waist_shift_knob(madx, rigidty_waist_shift_value=1, ir=1)
     matching.match_tunes_and_chromaticities(
-        madx, "lhc", "lhcb1", tune_x, tune_y, chrom_x, chrom_y, calls=200, telescopic_squeeze=True
+        madx,
+        "lhc",
+        "lhcb1",
+        tune_x,
+        tune_y,
+        chrom_x,
+        chrom_y,
+        calls=200,
+        telescopic_squeeze=True,
     )
     after_waist_shift = madx.table.twiss.dframe().copy()
     dqmin_with_waist = matching.get_closest_tune_approach(madx, "lhc", "lhcb1")
