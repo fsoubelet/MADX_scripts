@@ -19,6 +19,7 @@ all: clean
 help:
 	@echo "Please use 'make $(R)<target>$(E)' where $(R)<target>$(E) is one of:"
 	@echo "  $(R) clean $(E)          to recursively remove caches and jupyter checkpoints."
+	@echo "  $(R) format $(E)         to format python scripts in the Local_Coupling folder."
 
 clean:
 	@echo "Cleaning up bitecode files and python cache."
@@ -28,6 +29,10 @@ clean:
 	@echo "Cleaning up jupyter checkpoints."
 	@find . -type d -name '*.ipynb_checkpoints' -exec rm -rf {} + -o -type f -name 'coverage.xml' -delete
 	@echo "All cleaned up!\n"
+
+format:
+	@echo "Sorting imports and formatting code to PEP8, default line length is 110 characters."
+	@isort Local_Coupling/*.py && black -l 110 Local_Coupling/*.py
 
 # Catch-all unknow targets without returning an error. This is a POSIX-compliant syntax.
 .DEFAULT:
