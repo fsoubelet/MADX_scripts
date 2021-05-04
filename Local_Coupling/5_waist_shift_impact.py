@@ -91,8 +91,8 @@ def make_simulation(coupling_knob: float = 0.0) -> Results:
     chrom_x, chrom_y = 2.0, 2.0
 
     logger.info("Calling optics")
-    madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-    madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+    # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+    # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
     # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
     # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
     madx.command.beam()
@@ -163,4 +163,4 @@ if __name__ == "__main__":
     # simulation_results = make_simulation(  # local testing
     #     coupling_knob=0.003,
     # )
-    # simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")
+    simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")

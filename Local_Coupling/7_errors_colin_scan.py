@@ -108,7 +108,7 @@ def simulate(
 
         # ----- Errors ----- #
         logger.info("Applying misalignments to IR quads 1 to 6")
-        errors.misalign_lhc_ir_quadrupoles(  # 5% deviation
+        errors.misalign_lhc_ir_quadrupoles(  # 5 percent deviation
             madx,
             ip=1,
             beam=1,
