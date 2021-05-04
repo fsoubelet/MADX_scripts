@@ -64,7 +64,7 @@ def fullpath(filepath: Path) -> str:
 
 
 def simulate(
-    rqsx_right: float, rqsx_left: float, tilt_mean: float = 0.0, quadrupoles: List[int] = [1, 2, 3, 4, 5, 6]
+    kqsx3_right: float, kqsx3_left: float, tilt_mean: float = 0.0, quadrupoles: List[int] = [1, 2, 3, 4, 5, 6]
 ) -> Results:
     """
     Get a complete LHC setup, implement coupling at IP with tilt errors, scan the colinearity knob
@@ -74,8 +74,8 @@ def simulate(
     powered individually.
 
     Args:
-        rqsx_right (float): the powering value of the right corrector (RQSX3.R[IP]).
-        rqsx_left (float): the powering value of the left corrector (RQSX3.L[IP]).
+        kqsx3_right (float): the powering value of the right corrector (RQSX3.R[IP]).
+        kqsx3_left (float): the powering value of the left corrector (RQSX3.L[IP]).
         tilt_mean (float): mean value of the dpsi tilt distribution when applying to quadrupoles. To be
             provided throught htcondor submitter if running in CERN batch.
         quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to A6, to be
@@ -118,17 +118,17 @@ def simulate(
         )
 
         # ----- Colin Settings ----- #
-        logger.info(f"Applying corrector settings: RQSX3.R1 = {rqsx_right} and RQSX3.L1 = {rqsx_left}")
+        logger.info(f"Applying corrector settings: KQSX3.R1 = {kqsx3_right} and KQSX3.L1 = {kqsx3_left}")
         with madx.batch():
-            madx.globals.update({"RQSX3.R1": rqsx_right, "RQSX3.L1": rqsx_left})
+            madx.globals.update({"kqsx3.r1": kqsx3_right, "kqsx3.l1": kqsx3_left})
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
         madx.twiss(ripken=True)
         twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)
 
     return Results(
         tilt_mean=tilt_mean,
-        kqsx3_r1_value=rqsx_right,
-        kqsx3_l1_value=rqsx_left,
+        kqsx3_r1_value=kqsx3_right,
+        kqsx3_l1_value=kqsx3_left,
         beta12_value=twiss_df.loc[twiss_df.index == "ip1:1"].beta12[0],
         beta21_value=twiss_df.loc[twiss_df.index == "ip1:1"].beta21[0],
     )
@@ -143,14 +143,14 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
     # simulation_results = simulate(  # afs run
-    #     rqsx_right=%(RQSX_RIGHT)s,
-    #     rqsx_left=%(RQSX_LEFT)s,
+    #     kqsx3_right=%(KQSX3_RIGHT)s,
+    #     kqsx3_left=%(KQSX3_LEFT)s,
     #     tilt_mean=%(DPSI_MEAN)s,
     #     quadrupoles=[1, 2, 3, 4, 5, 6],
     # )
     # simulation_results = simulate(  # local testing
-    #     rqsx_right=20e-4,
-    #     rqsx_left=20e-4,
+    #     kqsx3_right=20e-4,
+    #     kqsx3_left=20e-4,
     #     tilt_mean=1e-3,
     #     quadrupoles=[1, 2, 3, 4, 5, 6],
     # )
