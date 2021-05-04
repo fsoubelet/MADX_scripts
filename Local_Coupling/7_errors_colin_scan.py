@@ -148,10 +148,10 @@ if __name__ == "__main__":
     #     tilt_mean=%(DPSI_MEAN)s,
     #     quadrupoles=[1, 2, 3, 4, 5, 6],
     # )
-    simulation_results = simulate(  # local testing
-        rqsx_right=20e-4,
-        rqsx_left=20e-4,
-        tilt_mean=1e-3,
-        quadrupoles=[1, 2, 3, 4, 5, 6],
-    )
+    # simulation_results = simulate(  # local testing
+    #     rqsx_right=20e-4,
+    #     rqsx_left=20e-4,
+    #     tilt_mean=1e-3,
+    #     quadrupoles=[1, 2, 3, 4, 5, 6],
+    # )
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")

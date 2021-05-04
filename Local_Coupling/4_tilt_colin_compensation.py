@@ -82,8 +82,8 @@ def make_simulation(
         logger.info("Calling optics")
         # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
         # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-        madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-        madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+        # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
+        # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
         logger.info("Setting up orbit and creating beams")
         special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
@@ -156,9 +156,9 @@ if __name__ == "__main__":
     #     tilt_angle=%(TILT_ANGLE)s,
     #     rigidity_knob=%(RIGIDITY_WAIST_SHIFT_KNOB)s,
     # )
-    simulation_results = make_simulation(  # local testing
-        colinearity_knob=-2,
-        tilt_angle=6e-4,
-        rigidity_knob=1,
-    )
+    # simulation_results = make_simulation(  # local testing
+    #     colinearity_knob=-2,
+    #     tilt_angle=6e-4,
+    #     rigidity_knob=1,
+    # )
     simulation_results.to_json(PATHS["htc_outputdir"] / "result_params.json")
