@@ -221,9 +221,9 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    # simulation_results = make_simulation(  # afs run
+    # simulation_results = gather_simulated_seeds(  # afs run
     #     tilt_mean=%(DPSI_MEAN)s,
-    #     quadrupoles=%(QUADRUPOLES)s,
+    #     quadrupoles=[1, 2, 3, 4, 5, 6],
     #     seeds=%(SEEDS)s,
     # )
     # simulation_results = gather_simulated_seeds(  # local testing
