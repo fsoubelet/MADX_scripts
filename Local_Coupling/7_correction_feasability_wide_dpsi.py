@@ -1,3 +1,12 @@
+"""
+This script starts a batch of seeds for simulations of DPSI in Q1 to Q6 quads around an IP, and asks MAD-X
+to attempt coupling correction at IP through the R matrix.
+For this script, the errors are distributed with a 'std * TGAUSS(2.5)' command, with the standard
+deviation being provided at the commandline.
+
+Seeds run concurrently through joblib's threading backend. Make sure to request enough CPUs on HTCondor when
+increasing the number of seeds, or your jobs will run out of memory.
+"""
 import json
 import multiprocessing
 import sys
@@ -133,7 +142,7 @@ def simulate(
             beam=1,
             quadrupoles=quadrupoles,
             sides="RL",
-            dpsi=f"{tilt_mean} + {abs(tilt_mean) * 0.15} * TGAUSS(2.5)",
+            dpsi=f"{tilt_mean} * TGAUSS(2.5)",  # this time centering on 0 and varying quad dpsi more
         )
         tilt_errors = (
             madx.table.ir_quads_errors.dframe().copy().set_index("name", drop=True).loc[:, ["dpsi"]]

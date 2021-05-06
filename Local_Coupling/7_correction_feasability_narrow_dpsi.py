@@ -1,3 +1,13 @@
+"""
+This script starts a batch of seeds for simulations of DPSI in Q1 to Q6 quads around an IP, and asks MAD-X
+to attempt coupling correction at IP through the R matrix.
+For this script, the errors are distributed with a 'value + 0.05 * value * TGAUSS(2.5)' command,
+with the standard value being provided at the commandline. This means all errors will be closely
+distributed around the same value, which given the phase advances in the IR should be a 'worst case' scenario.
+
+Seeds run consecutively (see the next script for a faster, concurrent implementation). Make sure to request
+enough CPUs on HTCondor when increasing the number of seeds, or your jobs will run out of memory.
+"""
 import json
 import sys
 from pathlib import Path

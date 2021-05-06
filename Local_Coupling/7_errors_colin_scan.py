@@ -1,3 +1,13 @@
+"""
+The previous scripts of step 7 show strange results at higher DPSI values, possibly because MAD-X
+struggles with the discrepancy between degrees of freedom and constraints when matching.
+This script implements a given high DPSI in Q1 to Q6 quads around an IP (from the previous scripts) and
+does a scan of independent MQSX3.[RL]{IP} settings (provide all values for each at the commandline through
+PyLHC's 'job_submitter') to see if MAD-X was struggling by itself, or if the conditions are indeed too hard.
+
+This is a very fast script that only does some matchings as the hardest operation, it should be flavor
+'espresso', and 'microcentury' at worst if AFS is slow today.
+"""
 import json
 import multiprocessing
 import sys
