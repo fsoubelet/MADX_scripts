@@ -120,23 +120,27 @@ def make_simulation(
 
     for _ in range(seeds):
         with Madx(command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
+            # ----- Init ----- #
             logger.info(f"Running with a mean tilt of {tilt_mean:.1E}")
             madx.option(echo=False, warn=False)
             madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
             madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
 
+            # ----- Machine ----- #
             logger.debug("Calling optics")
             # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
             # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
             # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
             # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
+            # ----- Setup ----- #
             special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
             orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
             special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
             madx.use(sequence="lhcb1")
             matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
+            # ----- Errors ----- #
             logger.info("Applying misalignments to IR quads 1 to 6")
             errors.misalign_lhc_ir_quadrupoles(  # requires pyhdtoolkit >= 0.9.0
                 madx,
@@ -150,6 +154,7 @@ def make_simulation(
                 madx.table.ir_quads_errors.dframe().copy().set_index("name", drop=True).loc[:, ["dpsi"]]
             )
 
+            # ----- Correction ----- #
             match_no_coupling_at_ip_through_rterms(madx, sequence="lhcb1", ip=1)
             madx.twiss(ripken=True)
             twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)

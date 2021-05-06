@@ -118,23 +118,27 @@ def simulate(
         the twiss result after correction.
     """
     with Madx(stdout=False) as madx:
-        logger.info(f"Running with a mean tilt of {tilt_mean:.1E}")
+        # ----- Init ----- #
+        logger.info(f"Running with a tilt stdev of {tilt_mean:.1E}")
         madx.option(echo=False, warn=False)
         madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
         madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
 
+        # ----- Machine ----- #
         logger.debug("Calling optics")
         # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
         # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
         # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
         # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
+        # ----- Setup ----- #
         special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
         orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
         special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
         madx.use(sequence="lhcb1")
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
+        # ----- Errors ----- #
         logger.info("Applying misalignments to IR quads 1 to 6")
         errors.misalign_lhc_ir_quadrupoles(  # requires pyhdtoolkit >= 0.9.0
             madx,
@@ -148,6 +152,7 @@ def simulate(
             madx.table.ir_quads_errors.dframe().copy().set_index("name", drop=True).loc[:, ["dpsi"]]
         )  # just get the dpsi column, save memory
 
+        # ----- Correction ----- #
         match_no_coupling_at_ip_through_rterms(madx, sequence="lhcb1", ip=1)
         madx.twiss(ripken=True)
         twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)
@@ -172,6 +177,8 @@ def gather_simulated_seeds(
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
     n_threads = int(multiprocessing.cpu_count() / 2)  # to ease the memory stress on HTCondor nodes
+
+    # ----- Run simulations ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
     tilt_errors, corrected_twisses = zip(
         *Parallel(n_jobs=n_threads, backend="threading")(
@@ -179,6 +186,7 @@ def gather_simulated_seeds(
         )
     )
 
+    # ----- Aggregate ----- #
     logger.info("Aggregating results from all seeds")
     all_errors = pd.concat(tilt_errors)  # concatenating all errors for this tilt's runs
     all_results = pd.concat(corrected_twisses)  # concatenating all resulting twisses for this tilt's runs
