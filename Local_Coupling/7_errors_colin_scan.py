@@ -32,13 +32,14 @@ PATHS = {
     "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
     "htc_outputdir": Path("Outputdata"),
 }
+
+defaults.config_logger(level="DEBUG")
 logger.add(
     PATHS["htc_outputdir"] / "full_pylog.log",
     format=defaults.LOGURU_FORMAT,
     enqueue=True,
     level="DEBUG",
 )
-defaults.config_logger(level="INFO")
 
 # ----- Utilities ----- #
 
@@ -58,9 +59,9 @@ class Results(BaseModel):
     @classmethod
     def from_json(cls, json_file: Union[str, Path]):
         """
-        Load a Pokemon instance's data from disk, saved in the JSON format.
+        Load a Result instance's data from disk, saved in the JSON format.
         Args:
-                json_file (Union[Path, str]): PosixPath object or string with the save file location.
+            json_file (Union[Path, str]): PosixPath object or string with the save file location.
         """
         logger.info(f"Loading JSON data from file at '{Path(json_file).absolute()}'")
         return cls.parse_file(json_file, content_type="application/json")
@@ -73,7 +74,7 @@ def fullpath(filepath: Path) -> str:
 # ----- Simulation ----- #
 
 
-def simulate(
+def make_simulation(
     kqsx3_right: float, kqsx3_left: float, tilt_mean: float = 0.0, quadrupoles: List[int] = [1, 2, 3, 4, 5, 6]
 ) -> Results:
     """
