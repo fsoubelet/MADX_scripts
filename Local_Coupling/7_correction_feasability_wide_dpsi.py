@@ -1,11 +1,13 @@
 """
-This script starts a batch of seeds for simulations of DPSI in Q1 to Q6 quads around an IP, and asks MAD-X
-to attempt coupling correction at IP through the R matrix.
-For this script, the errors are distributed with a 'std * TGAUSS(2.5)' command, with the standard
-deviation being provided at the commandline.
+This script starts a batch of seeds for simulations of DPSI in Q1 to Q6 quads around an IP, and
+asks MAD-X to attempt coupling correction at IP through the Ripken parameters beta12 and beta21.
 
-Seeds run concurrently through joblib's threading backend. Make sure to request enough CPUs on HTCondor when
-increasing the number of seeds, or your jobs will run out of memory.
+For this script, the errors are distributed with a 'std * TGAUSS(2.5)' command, with the standard
+deviation being provided at the commandline. This means all errors will be distributed around 0
+according to a truncated gaussian distribution with the stdev given at the commandline.
+
+Seeds run concurrently through joblib's threading backend. Make sure to request enough CPUs on
+HTCondor when increasing the number of seeds, or your jobs will run out of memory.
 """
 import json
 import multiprocessing
@@ -31,13 +33,14 @@ PATHS = {
     "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
     "htc_outputdir": Path("Outputdata"),
 }
+
+defaults.config_logger(level="INFO")  # goes to stdout
 logger.add(
     PATHS["htc_outputdir"] / "full_pylog.log",
     format=defaults.LOGURU_FORMAT,
     enqueue=True,
     level="DEBUG",
 )
-defaults.config_logger(level="INFO")
 
 # ----- Utilities ----- #
 
@@ -70,9 +73,9 @@ class Results(BaseModel):
     @classmethod
     def from_json(cls, json_file: Union[str, Path]):
         """
-        Load a Pokemon instance's data from disk, saved in the JSON format.
+        Load a Result instance's data from disk, saved in the JSON format.
         Args:
-                json_file (Union[Path, str]): PosixPath object or string with the save file location.
+            json_file (Union[Path, str]): PosixPath object or string with the save file location.
         """
         logger.info(f"Loading JSON data from file at '{Path(json_file).absolute()}'")
         return cls.parse_file(json_file, content_type="application/json")
@@ -82,44 +85,30 @@ def fullpath(filepath: Path) -> str:
     return str(filepath.absolute())
 
 
-def match_no_coupling_at_ip_through_rterms(madx: Madx, sequence: str, ip: int) -> None:
-    """
-    Matching commands to get R-matrix terms to be 0 at given IP, using skew quad correctors independently.
-    """
-    logger.info(f"Matching R-terms for no coupling at IP {ip:d}")
-    madx.command.match(sequence=sequence, chrom=True)
-    madx.command.vary(name=f"KQSX3.R{ip:d}")  # using skew quad correctors independently here!
-    madx.command.vary(name=f"KQSX3.L{ip:d}")
-    madx.command.constraint(range_=f"IP{ip:d}", R11=0)
-    madx.command.constraint(range_=f"IP{ip:d}", R12=0)
-    madx.command.constraint(range_=f"IP{ip:d}", R21=0)
-    madx.command.constraint(range_=f"IP{ip:d}", R22=0)
-    madx.command.lmdif(calls=500, tolerance=1e-21)
-    madx.command.endmatch()
-
-
 # ----- Simulation ----- #
 
 
-def simulate(
-    tilt_mean: float = 0.0, quadrupoles: List[int] = [1, 2, 3, 4, 5, 6]
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Get a complete LHC setup, simulate coupling correction at IP with tilt errors, return important values.
+    Get a complete LHC setup, implement coupling at IP with tilt errors and attempt correction by
+    matching cross-term Ripken parameters to 0 at IP using skew quadrupole correctors (MQSX3).
+    Both simulation parameters the results are stored in a structure and exported to JSON.
 
     Args:
-        tilt_mean (float): mean value of the dpsi tilt distribution when applying to quadrupoles. To be
-            provided throught htcondor submitter if running in CERN batch.
-        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to A6, to be
-            provided throught htcondor submitter if running in CERN batch.
+        tilt_stdev (float): mean value of the dpsi tilt distribution when applying to quadrupoles.
+            To be provided throught htcondor submitter if running in CERN batch.
+        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to Q6,
+            to be provided throught htcondor submitter if running in CERN batch.
 
     Returns:
-        A tuple of two relevant dataframes, the first one with the assigned errors and the second one with
-        the twiss result after correction.
+        A tuple of two relevant dataframes, the first one with the assigned errors and the second
+        one with the twiss result after correction.
     """
-    with Madx(stdout=False) as madx:
+    quadrupoles = [1, 2, 3, 4, 5, 6] if quadrupoles is None else quadrupoles
+
+    with Madx(command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
         # ----- Init ----- #
-        logger.info(f"Running with a tilt stdev of {tilt_mean:.1E}")
+        logger.info(f"Running with a tilt stdev of {tilt_stdev:.1E}")
         madx.option(echo=False, warn=False)
         madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
         madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
@@ -133,56 +122,57 @@ def simulate(
 
         # ----- Setup ----- #
         special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
-        orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
+        _ = orbit.setup_lhc_orbit(madx, scheme="flat")
         special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
-        madx.use(sequence="lhcb1")
+        madx.command.use(sequence="lhcb1")
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
         # ----- Errors ----- #
-        logger.info("Applying misalignments to IR quads 1 to 6")
+        logger.info(f"Applying misalignments to IR quads {quadrupoles[0]} to {quadrupoles[-1]}")
         errors.misalign_lhc_ir_quadrupoles(  # requires pyhdtoolkit >= 0.9.0
             madx,
             ip=1,
             beam=1,
             quadrupoles=quadrupoles,
             sides="RL",
-            dpsi=f"{tilt_mean} * TGAUSS(2.5)",  # this time centering on 0 and varying quad dpsi more
+            dpsi=f"{tilt_stdev} * TGAUSS(2.5)",
         )
-        tilt_errors = (
+        tilt_errors = (  # just get the dpsi column, save memory
             madx.table.ir_quads_errors.dframe().copy().set_index("name", drop=True).loc[:, ["dpsi"]]
-        )  # just get the dpsi column, save memory
+        )
 
         # ----- Correction ----- #
-        match_no_coupling_at_ip_through_rterms(madx, sequence="lhcb1", ip=1)
+        special.match_no_coupling_through_ripkens(  # requires pyhdtoolkit >= 0.9.2
+            madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
+        )
         madx.twiss(ripken=True)
         twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)
         twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
     return tilt_errors, twiss_df
 
 
-def gather_simulated_seeds(
-    tilt_mean: float = 0.0, quadrupoles: List[int] = [1, 2, 3, 4, 5, 6], seeds: int = 50
-) -> Results:
+def gather_simulated_seeds(tilt_stdev: float = 0.0, quadrupoles=None, seeds: int = 50) -> Results:
     """
-    Simulate a setup through many different seeds, aggregating the results and exporting the final structure.
-    Parameters and the results are stored in a structure and exported to JSON.
+    Simulate a setup through many different seeds, aggregating the results and exporting the final
+    structure. Parameters and the results are stored in a structure and exported to JSON.
 
     Args:
-        tilt_mean (float): mean value of the dpsi tilt distribution when applying to quadrupoles. To be
-            provided throught htcondor submitter if running in CERN batch.
-        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to A6, to be
-            provided throught htcondor submitter if running in CERN batch.
+        tilt_stdev (float): mean value of the dpsi tilt distribution when applying to quadrupoles.
+            To be provided throught htcondor submitter if running in CERN batch.
+        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to A6,
+            to be provided throught htcondor submitter if running in CERN batch.
         seeds (int): the number of runs with different seeds to do for each tilt value.
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
+    quadrupoles = [1, 2, 3, 4, 5, 6] if quadrupoles is None else quadrupoles
     n_threads = int(multiprocessing.cpu_count() / 2)  # to ease the memory stress on HTCondor nodes
 
-    # ----- Run simulations ----- #
+    # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
     tilt_errors, corrected_twisses = zip(
         *Parallel(n_jobs=n_threads, backend="threading")(
-            delayed(simulate)(tilt_mean, quadrupoles) for _ in range(seeds)
+            delayed(make_simulation)(tilt_stdev, quadrupoles) for _ in range(seeds)
         )
     )
 
@@ -192,7 +182,7 @@ def gather_simulated_seeds(
     all_results = pd.concat(corrected_twisses)  # concatenating all resulting twisses for this tilt's runs
 
     return Results(
-        tilt_mean=tilt_mean,
+        tilt_mean=tilt_stdev,
         tilt_std=all_errors.dpsi.std(),
         r11_value=all_results.r11.mean(),
         r11_std=all_results.r11.std(),
@@ -222,7 +212,7 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
     # simulation_results = gather_simulated_seeds(  # afs run
-    #     tilt_mean=%(DPSI_MEAN)s,
+    #     tilt_stdev=%(DPSI_MEAN)s,
     #     quadrupoles=[1, 2, 3, 4, 5, 6],
     #     seeds=%(SEEDS)s,
     # )
