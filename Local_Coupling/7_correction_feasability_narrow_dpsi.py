@@ -13,7 +13,7 @@ import json
 import multiprocessing
 import sys
 from pathlib import Path
-from typing import List, Sequence, Union
+from typing import List, Sequence, Tuple, Union
 
 import cpymad
 import numpy as np
