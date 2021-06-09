@@ -34,7 +34,7 @@ PATHS = {
     "htc_outputdir": Path("Outputdata"),
 }
 
-defaults.config_logger(level="INFO")  # goes to stdout
+defaults.config_logger(level="INFO", enqueue=True)  # goes to stdout
 logger.add(
     PATHS["htc_outputdir"] / "full_pylog.log",
     format=defaults.LOGURU_FORMAT,
@@ -106,7 +106,6 @@ def make_simulation(tilt_mean: float = 0.0, quadrupoles=None) -> Tuple[pd.DataFr
     """
     quadrupoles = [1, 2, 3, 4, 5, 6] if quadrupoles is None else quadrupoles
 
-    # for _ in range(seeds):
     with Madx(command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
         # ----- Init ----- #
         logger.info(f"Running with a mean tilt of {tilt_mean:.1E}")
@@ -146,8 +145,7 @@ def make_simulation(tilt_mean: float = 0.0, quadrupoles=None) -> Tuple[pd.DataFr
         special.match_no_coupling_through_ripkens(  # requires pyhdtoolkit >= 0.9.2
             madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
         )
-        madx.twiss(ripken=True)
-        twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)
+        twiss_df = madx.twiss(ripken=True).dframe().copy().set_index("name", drop=True)
         twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
     return tilt_errors, twiss_df
 

@@ -19,7 +19,7 @@ import cpymad
 import numpy as np
 import pandas as pd
 import pyhdtoolkit
-from cpymad.madx import Madx
+from cpymad.madx import Madx, TwissFailed
 from joblib import Parallel, delayed
 from loguru import logger
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ PATHS = {
     "htc_outputdir": Path("Outputdata"),
 }
 
-defaults.config_logger(level="INFO")  # goes to stdout
+defaults.config_logger(level="INFO", enqueue=True)  # goes to stdout
 logger.add(
     PATHS["htc_outputdir"] / "full_pylog.log",
     format=defaults.LOGURU_FORMAT,
@@ -145,8 +145,7 @@ def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None) -> Tuple[pd.DataF
         special.match_no_coupling_through_ripkens(  # requires pyhdtoolkit >= 0.9.2
             madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
         )
-        madx.twiss(ripken=True)
-        twiss_df = madx.table.twiss.dframe().copy().set_index("name", drop=True)
+        twiss_df = madx.twiss(ripken=True).dframe().copy().set_index("name", drop=True)
         twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
     return tilt_errors, twiss_df
 
