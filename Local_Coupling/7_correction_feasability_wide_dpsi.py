@@ -23,7 +23,7 @@ from cpymad.madx import Madx, TwissFailed
 from joblib import Parallel, delayed
 from loguru import logger
 from pydantic import BaseModel
-from pyhdtoolkit.cpymadtools import errors, matching, orbit, special
+from pyhdtoolkit.cpymadtools import constants, errors, matching, orbit, special
 from pyhdtoolkit.utils import defaults
 
 # ----- Setup ----- #
@@ -147,6 +147,7 @@ def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None) -> Tuple[pd.DataF
         )
         twiss_df = madx.twiss(ripken=True).dframe().copy().set_index("name", drop=True)
         twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
+        twiss_df = twiss_df.loc[:, constants.DEFAULT_TWISS_COLUMNS + ["k1s"]]  # will save disk
     return tilt_errors, twiss_df
 
 
@@ -178,7 +179,7 @@ def gather_simulated_seeds(tilt_stdev: float = 0.0, quadrupoles=None, seeds: int
     # ----- Aggregate ----- #
     logger.info("Aggregating results from all seeds")
     all_errors = pd.concat(tilt_errors)  # concatenating all errors for this tilt's runs
-    all_results = pd.concat(corrected_twisses)  # concatenating all resulting twisses for this tilt's runs
+    all_results = pd.concat(corrected_twisses)  # concatenating all twisses for this tilt's runs
 
     return Results(
         tilt_mean=tilt_stdev,
