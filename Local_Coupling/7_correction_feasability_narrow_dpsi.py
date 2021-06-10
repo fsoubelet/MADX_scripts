@@ -156,7 +156,6 @@ def make_simulation(
                 twiss_df = madx.twiss(ripken=True).dframe().copy()
                 twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
                 twiss_df = twiss_df.loc[:, DEFAULT_TWISS_COLUMNS + ["k1s"]]  # save memory
-                twiss_df = twiss_df.set_index("name", drop=True)
                 beta12, beta21 = twiss_df.beta12["ip1"], twiss_df.beta21["ip1"]
             except TwissFailed:  # MAD-X giga-fucked internally
                 beta12, beta21 = 1, 1  # force these values so we restard the simulation
