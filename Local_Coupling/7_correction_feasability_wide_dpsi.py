@@ -23,7 +23,8 @@ from cpymad.madx import Madx, TwissFailed
 from joblib import Parallel, delayed
 from loguru import logger
 from pydantic import BaseModel
-from pyhdtoolkit.cpymadtools import constants, errors, matching, orbit, special
+from pyhdtoolkit.cpymadtools import errors, matching, orbit, special
+from pyhdtoolkit.cpymadtools.constants import DEFAULT_TWISS_COLUMNS
 from pyhdtoolkit.utils import defaults
 
 # ----- Setup ----- #
@@ -88,7 +89,7 @@ def fullpath(filepath: Path) -> str:
 # ----- Simulation ----- #
 
 
-def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None, tolerance: float = 1e-4) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Get a complete LHC setup, implement coupling at IP with tilt errors and attempt correction by
     matching cross-term Ripken parameters to 0 at IP using skew quadrupole correctors (MQSX3).
@@ -99,55 +100,63 @@ def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None) -> Tuple[pd.DataF
             To be provided throught htcondor submitter if running in CERN batch.
         quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to Q1 to Q6,
             to be provided throught htcondor submitter if running in CERN batch.
+        tolerance (float): value above which to consider MAD-X has messed up when matching and
+            restart the simulation. Defaults to 1e-4.
 
     Returns:
         A tuple of two relevant dataframes, the first one with the assigned errors and the second
         one with the twiss result after correction.
     """
     quadrupoles = [1, 2, 3, 4, 5, 6] if quadrupoles is None else quadrupoles
+    beta12, beta21 = 1, 1  # for initial checks
 
-    with Madx(command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
-        # ----- Init ----- #
-        logger.info(f"Running with a tilt stdev of {tilt_stdev:.1E}")
-        madx.option(echo=False, warn=False)
-        madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
-        madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
+    while beta12 > tolerance or beta21 > tolerance:
+        with Madx(command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
+            # ----- Init ----- #
+            logger.info(f"Running with a tilt stdev of {tilt_stdev:.1E}")
+            madx.option(echo=False, warn=False)
+            madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
+            madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
 
-        # ----- Machine ----- #
-        logger.debug("Calling optics")
-        # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
-        # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
-        # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
-        # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
+            # ----- Machine ----- #
+            logger.debug("Calling optics")
+            # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
+            # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
+            # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local
+            # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local
 
-        # ----- Setup ----- #
-        special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
-        _ = orbit.setup_lhc_orbit(madx, scheme="flat")
-        special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
-        madx.command.use(sequence="lhcb1")
-        matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
+            # ----- Setup ----- #
+            special.re_cycle_sequence(madx, sequence="lhcb1", start="IP3")
+            _ = orbit.setup_lhc_orbit(madx, scheme="flat")
+            special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
+            madx.command.use(sequence="lhcb1")
+            matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
-        # ----- Errors ----- #
-        logger.info(f"Applying misalignments to IR quads {quadrupoles[0]} to {quadrupoles[-1]}")
-        errors.misalign_lhc_ir_quadrupoles(  # requires pyhdtoolkit >= 0.9.0
-            madx,
-            ip=1,
-            beam=1,
-            quadrupoles=quadrupoles,
-            sides="RL",
-            dpsi=f"{tilt_stdev} * TGAUSS(2.5)",
-        )
-        tilt_errors = (  # just get the dpsi column, save memory
-            madx.table.ir_quads_errors.dframe().copy().set_index("name", drop=True).loc[:, ["dpsi"]]
-        )
+            # ----- Errors ----- #
+            logger.info(f"Applying misalignments to IR quads {quadrupoles[0]} to {quadrupoles[-1]}")
+            errors.misalign_lhc_ir_quadrupoles(  # requires pyhdtoolkit >= 0.9.0
+                madx,
+                ip=1,
+                beam=1,
+                quadrupoles=quadrupoles,
+                sides="RL",
+                dpsi=f"{tilt_stdev} * TGAUSS(2.5)",
+            )
+            tilt_errors = (  # just get the dpsi column, save memory
+                madx.table.ir_quads_errors.dframe().set_index("name", drop=True).loc[:, ["dpsi"]]
+            )
 
-        # ----- Correction ----- #
-        special.match_no_coupling_through_ripkens(  # requires pyhdtoolkit >= 0.9.2
-            madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
-        )
-        twiss_df = madx.twiss(ripken=True).dframe().copy().set_index("name", drop=True)
-        twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
-        twiss_df = twiss_df.loc[:, constants.DEFAULT_TWISS_COLUMNS + ["k1s"]]  # will save disk
+            # ----- Correction ----- #
+            special.match_no_coupling_through_ripkens(  # requires pyhdtoolkit >= 0.9.2
+                madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
+            )
+            try:
+                twiss_df = madx.twiss(ripken=True).dframe().set_index("name", drop=True)
+                twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
+                twiss_df = twiss_df.loc[:, DEFAULT_TWISS_COLUMNS + ["k1s"]]  # save memory
+                beta12, beta21 = twiss_df.beta12["ip1"], twiss_df.beta21["ip1"]
+            except TwissFailed:  # MAD-X giga-fucked internally
+                beta12, beta21 = 1, 1  # force these values so we restard the simulation
     return tilt_errors, twiss_df
 
 
