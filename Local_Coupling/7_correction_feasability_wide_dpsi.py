@@ -89,7 +89,9 @@ def fullpath(filepath: Path) -> str:
 # ----- Simulation ----- #
 
 
-def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None, tolerance: float = 1e-4) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def make_simulation(
+    tilt_stdev: float = 0.0, quadrupoles=None, tolerance: float = 1e-4
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Get a complete LHC setup, implement coupling at IP with tilt errors and attempt correction by
     matching cross-term Ripken parameters to 0 at IP using skew quadrupole correctors (MQSX3).
@@ -151,9 +153,10 @@ def make_simulation(tilt_stdev: float = 0.0, quadrupoles=None, tolerance: float 
                 madx, sequence="lhcb1", location="IP1", vary_knobs=["KQSX3.R1", "KQSX3.L1"]
             )
             try:
-                twiss_df = madx.twiss(ripken=True).dframe().set_index("name", drop=True)
+                twiss_df = madx.twiss(ripken=True).dframe().copy()
                 twiss_df["k1s"] = twiss_df.k1sl / twiss_df.l
                 twiss_df = twiss_df.loc[:, DEFAULT_TWISS_COLUMNS + ["k1s"]]  # save memory
+                twiss_df = twiss_df.set_index("name", drop=True)
                 beta12, beta21 = twiss_df.beta12["ip1"], twiss_df.beta21["ip1"]
             except TwissFailed:  # MAD-X giga-fucked internally
                 beta12, beta21 = 1, 1  # force these values so we restard the simulation
