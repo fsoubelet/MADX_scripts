@@ -207,10 +207,10 @@ def gather_simulated_seeds(tilt_stdev: float = 0.0, quadrupoles=None, seeds: int
         beta12_std=all_results.beta12.std(),
         beta21_value=all_results.beta21.mean(),
         beta21_std=all_results.beta21.std(),
-        kqsx3_l1_value=all_results.loc[all_results.index == "mqsx.3l1:1"].k1s.mean(),
-        kqsx3_l1_std=all_results.loc[all_results.index == "mqsx.3l1:1"].k1s.std(),
-        kqsx3_r1_value=all_results.loc[all_results.index == "mqsx.3r1:1"].k1s.mean(),
-        kqsx3_r1_std=all_results.loc[all_results.index == "mqsx.3r1:1"].k1s.std(),
+        kqsx3_l1_value=all_results.loc[all_results.index == "mqsx.3l1"].k1s.mean(),
+        kqsx3_l1_std=all_results.loc[all_results.index == "mqsx.3l1"].k1s.std(),
+        kqsx3_r1_value=all_results.loc[all_results.index == "mqsx.3r1"].k1s.mean(),
+        kqsx3_r1_std=all_results.loc[all_results.index == "mqsx.3r1"].k1s.std(),
     )
 
 
