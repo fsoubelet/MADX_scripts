@@ -192,21 +192,24 @@ def gather_simulated_seeds(tilt_mean: float = 0.0, quadrupoles=None, seeds: int 
     all_errors = pd.concat(tilt_errors)  # concatenating all errors for this tilt's runs
     all_results = pd.concat(corrected_twisses)  # concatenating all twisses for this tilt's runs
 
-    return Results(
+    logger.debug("Filtering concatenated results to keep IP and MQSX properties only")
+    all_results = all_results[(all_results.index == "ip1") | (all_results.index.str.contains("mqsx.3[rl]1"))]
+
+    return Results(  # we want either at IP values (rterms & ripkens) or at correctors values (powering k1s)
         tilt_mean=tilt_mean,
         tilt_std=all_errors.dpsi.std(),
-        r11_value=all_results.r11.mean(),
-        r11_std=all_results.r11.std(),
-        r12_value=all_results.r12.mean(),
-        r12_std=all_results.r12.std(),
-        r21_value=all_results.r21.mean(),
-        r21_std=all_results.r21.std(),
-        r22_value=all_results.r22.mean(),
-        r22_std=all_results.r22.std(),
-        beta12_value=all_results.beta12.mean(),
-        beta12_std=all_results.beta12.std(),
-        beta21_value=all_results.beta21.mean(),
-        beta21_std=all_results.beta21.std(),
+        r11_value=all_results[all_results.index == "ip1"].r11.mean(),
+        r11_std=all_results[all_results.index == "ip1"].r11.std(),
+        r12_value=all_results[all_results.index == "ip1"].r12.mean(),
+        r12_std=all_results[all_results.index == "ip1"].r12.std(),
+        r21_value=all_results[all_results.index == "ip1"].r21.mean(),
+        r21_std=all_results[all_results.index == "ip1"].r21.std(),
+        r22_value=all_results[all_results.index == "ip1"].r22.mean(),
+        r22_std=all_results[all_results.index == "ip1"].r22.std(),
+        beta12_value=all_results[all_results.index == "ip1"].beta12.mean(),
+        beta12_std=all_results[all_results.index == "ip1"].beta12.std(),
+        beta21_value=all_results[all_results.index == "ip1"].beta21.mean(),
+        beta21_std=all_results[all_results.index == "ip1"].beta21.std(),
         kqsx3_l1_value=all_results.loc[all_results.index == "mqsx.3l1"].k1s.mean(),
         kqsx3_l1_std=all_results.loc[all_results.index == "mqsx.3l1"].k1s.std(),
         kqsx3_r1_value=all_results.loc[all_results.index == "mqsx.3r1"].k1s.mean(),
