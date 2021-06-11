@@ -196,7 +196,7 @@ def gather_simulated_seeds(tilt_stdev: float = 0.0, quadrupoles=None, seeds: int
     all_results = all_results[(all_results.index == "ip1") | (all_results.index.str.contains("mqsx.3[rl]1"))]
 
     return Results(  # we want either at IP values (rterms & ripkens) or at correctors values (powering k1s)
-        tilt_mean=tilt_mean,
+        tilt_mean=tilt_stdev,
         tilt_std=all_errors.dpsi.std(),
         r11_value=all_results[all_results.index == "ip1"].r11.mean(),
         r11_std=all_results[all_results.index == "ip1"].r11.std(),
