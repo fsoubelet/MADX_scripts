@@ -90,7 +90,7 @@ def fullpath(filepath: Path) -> str:
 
 
 def make_simulation(
-    tilt_mean: float = 0.0, quadrupoles=None, tolerance: float = 1e-4
+    tilt_mean: float = 0.0, quadrupoles=None, tolerance: float = 1e-6
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Get a complete LHC setup, implement coupling at IP with tilt errors and attempt correction by
