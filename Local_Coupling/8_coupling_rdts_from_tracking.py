@@ -34,6 +34,8 @@ import pyhdtoolkit
 import tfs
 from cpymad.madx import Madx
 from loguru import logger
+from omc3.hole_in_one import hole_in_one_entrypoint as hole_in_one
+from omc3.tbt_converter import converter_entrypoint as tbt_converter
 from optics_functions.coupling import coupling_via_cmatrix
 from pyhdtoolkit.cpymadtools import matching, orbit, special, track, twiss
 from pyhdtoolkit.utils import defaults
@@ -164,10 +166,9 @@ if __name__ == "__main__":
         )
     # make_simulation(  # afs run
     #     colin_knob=%(COLIN_KNOB_SETTING)s,
-    #     lhc_model_dir=%(LHC_MODEL_DIR)s,
+    #     lhc_model_dir="%(LHC_MODEL_DIR)s",
     # )
     # make_simulation(  # local testing
     #     colin_knob=3,
     #     lhc_model_dir="/Users/felixsoubelet/cernbox/OMC/Local_Coupling_Correction/8_check_crdts_1bpm/data/lhc_model",
     # )
-    simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
