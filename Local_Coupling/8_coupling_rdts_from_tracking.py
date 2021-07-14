@@ -31,6 +31,7 @@ import shutil
 from pathlib import Path
 
 import cpymad
+import numpy as np
 import pyhdtoolkit
 import tfs
 from cpymad.madx import Madx
@@ -62,6 +63,31 @@ logger.add(
 
 def fullpath(filepath: Path) -> str:
     return str(filepath.absolute())
+
+
+def split_rdt_complex_columns(coupling_data_frame: tfs.TfsDataFrame) -> tfs.TfsDataFrame:
+    """
+    Split the coupling RDT columns in the provided TfsDataFrame into real, imaginary and amplitude columns.
+    This is done to guarantee the data can be written to disk as complex columns are not supported by the
+    TFS data format.
+
+    Args:
+        coupling_data_frame (tfs.TfsDataFrame): your coupling data frame with
+
+    Returns:
+        The data frame with RDT complex columns split and then removed.
+    """
+    logger.debug("Splitting and removing complex columns from provided TfsDataFrame")
+    data_frame = coupling_data_frame.copy()
+    logger.trace("Splitting F1001 column")
+    data_frame["F1001_REAL"] = np.real(data_frame.F1001.to_numpy())
+    data_frame["F1001_IMAG"] = np.imag(data_frame.F1001.to_numpy())
+    data_frame["F1001_AMP"] = np.abs(data_frame.F1001.to_numpy())
+    logger.trace("Splitting F1010 column")
+    data_frame["F1010_REAL"] = np.real(data_frame.F1010.to_numpy())
+    data_frame["F1010_IMAG"] = np.imag(data_frame.F1010.to_numpy())
+    data_frame["F1010_AMP"] = np.abs(data_frame.F1010.to_numpy())
+    return data_frame
 
 
 # ----- Simulation ----- #
@@ -125,6 +151,7 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
     coupling_df = coupling_via_cmatrix(twiss_df)
     twiss_df[["F1001", "F1010"]] = coupling_df[["F1001", "F1010"]]
     twiss_df_bpm: tfs.TfsDataFrame = twiss_df[twiss_df.KEYWORD == "monitor"]
+    twiss_df_bpm = split_rdt_complex_columns(twiss_df_bpm)
     tfs.write("Outputdata/coupling_twiss_bpm.tfs", twiss_df_bpm)
 
     logger.info("Doing trackone file conversion with omc3's tbt_converter")
