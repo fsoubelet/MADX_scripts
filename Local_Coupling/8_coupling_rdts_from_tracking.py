@@ -87,7 +87,7 @@ def split_rdt_complex_columns(coupling_data_frame: tfs.TfsDataFrame) -> tfs.TfsD
     data_frame["F1010_REAL"] = np.real(data_frame.F1010.to_numpy())
     data_frame["F1010_IMAG"] = np.imag(data_frame.F1010.to_numpy())
     data_frame["F1010_AMP"] = np.abs(data_frame.F1010.to_numpy())
-    return data_frame
+    return data_frame.drop(columns=["F1001", "F1010"])
 
 
 # ----- Simulation ----- #
