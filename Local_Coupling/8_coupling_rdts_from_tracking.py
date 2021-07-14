@@ -27,6 +27,7 @@ Need to provide at HTCondor submission time with `job_submitter`:
 - LHC_MODEL_DIR -> location of a single model dir for all simulations to tap into
 - COLIN_KNOB_SETTING -> value of the colinearty knob
 """
+import shutil
 from pathlib import Path
 
 import cpymad
@@ -154,6 +155,10 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
         nonlinear=["rdt", "crdt"],
         outputdir=Path("Outputdata/measured_optics"),
     )
+
+    logger.info("Cleaning up: removing 'trackone' and 'lin_files'")
+    Path("Outputdata/trackone").unlink()
+    shutil.rmtree("Outputdata/measured_optics/lin_files")
 
 
 # ----- Running ----- #
