@@ -104,7 +104,7 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.27, 60.36, 2.0, 2.0)  # avoid flip
         special.apply_lhc_colinearity_knob(madx, colinearity_knob_value=colin_knob, ir=1)
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0)  # guarantee
-        twiss_df = twiss.get_twiss_tfs(madx).drop(index="IP1.L1")
+        twiss_df: tfs.TfsDataFrame = twiss.get_twiss_tfs(madx).drop(index="IP1.L1")
 
         # ----- Tracking ----- #
         special.make_lhc_thin(madx, sequence="lhcb1", slicefactor=4)
@@ -125,7 +125,7 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
     coupling_df = coupling_via_cmatrix(twiss_df)
     twiss_df[["F1001", "F1010"]] = coupling_df[["F1001", "F1010"]]
     twiss_df_bpm: tfs.TfsDataFrame = twiss_df[twiss_df.KEYWORD == "monitor"]
-    twiss_df_bpm.to_pickle("Outputdata/coupling_twiss_bpm.pkl")
+    tfs.write("Outputdata/coupling_twiss_bpm.tfs", twiss_df_bpm)
 
     logger.info("Doing trackone file conversion with omc3's tbt_converter")
     tbt_converter(
