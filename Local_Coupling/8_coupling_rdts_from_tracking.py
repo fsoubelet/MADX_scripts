@@ -152,8 +152,8 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
     twiss_df[["F1001", "F1010"]] = coupling_df[["F1001", "F1010"]]
     twiss_df_bpm: tfs.TfsDataFrame = twiss_df[twiss_df.KEYWORD == "monitor"]
     twiss_df_bpm = split_rdt_complex_columns(twiss_df_bpm)
-    twiss_df_bpm = twiss_df_bpm.reset_index().rename(columns={"index": "NAME"})
-    tfs.write("Outputdata/coupling_twiss_bpm.tfs", twiss_df_bpm)
+    # twiss_df_bpm = twiss_df_bpm.reset_index().rename(columns={"index": "NAME"})
+    tfs.write("Outputdata/coupling_twiss_bpm.tfs", twiss_df_bpm, save_index="NAME")
 
     logger.info("Doing trackone file conversion with omc3's tbt_converter")
     tbt_converter(
