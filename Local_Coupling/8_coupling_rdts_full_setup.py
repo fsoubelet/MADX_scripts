@@ -34,6 +34,7 @@ from pathlib import Path
 
 import cpymad
 import numpy as np
+import pandas as pd
 import pyhdtoolkit
 import tfs
 from cpymad.madx import Madx
@@ -147,9 +148,9 @@ def make_simulation(colin_knob: float, tilt_stdev: float, lhc_model_dir: str) ->
             dpsi=f"{tilt_stdev} * TGAUSS(2.5)",
         )
         logger.debug("Querying and exporting error table")
-        tilt_errors = tfs.TfsDataFrame(  # only dpsi column to save space
-            madx.table.ir_quads_errors.dframe().loc[:, ["dpsi"]],
-            headers={var.upper(): madx.table.summ[var][0] for var in madx.table.summ},
+        tilt_errors = tfs.TfsDataFrame(  # only dpsi and name columns to save space
+            madx.table.ir_quads_errors.dframe().copy().loc[:, ["name", "dpsi"]].set_index("name"),
+            headers={var.upper(): madx.table.summ[var][0] for var in madx.table.summ}
         )
         tfs.write("Outputdata/tilt_errors.tfs", tilt_errors, save_index="name")
 
