@@ -1,7 +1,8 @@
 """
 This script is used to start a batch simulations looking at the coupling RDTs and CRDTs calculation in
-the presence of the colinearity knob in an IR (here IR1) in both theoretical calculations from TWISS
-output with optics_functions and "measurement" output from omc3's analysis codes.
+the presence of the colinearity knob in an IR (here IR1) with also a small value of the coupling knob and
+some magnet tilt errors in the IRs, in both theoretical calculations from TWISS output with
+optics_functions and "measurement" output from omc3's analysis codes.
 
 The measurement is simulated by tracking a particle and defining BPMs as observation points. The BPMs
 are taken from the model directory, which should be made ahead of time with omc3's model_creator as shown
@@ -26,6 +27,7 @@ create_instance_and_model(
 Need to provide at HTCondor submission time with `job_submitter`:
 - LHC_MODEL_DIR -> location of a single model dir for all simulations to tap into
 - COLIN_KNOB_SETTING -> value of the colinearty knob
+- TILT_STDEV -> mean value of the DPSI tilt distribution
 """
 import shutil
 from pathlib import Path
@@ -93,43 +95,69 @@ def split_rdt_complex_columns(coupling_data_frame: tfs.TfsDataFrame) -> tfs.TfsD
 # ----- Simulation ----- #
 
 
-def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
+def make_simulation(colin_knob: float, tilt_stdev: float, lhc_model_dir: str) -> None:
     """
-    Get a complete LHC setup, implement colinearity knob in IR, perform tracking and do data analysis on
-    the outputs. Everything of interest is written to disk in the `Outputdata` folder, which HTCondor
-    will bring back to local space after the jobs are done.
+    Get a complete LHC setup, implement coupling knob, implement tilt errors in IR quadrupoles, implement
+    colinearity knob in IR, perform tracking and do data analysis on the output. Everything of interest is
+    written to disk in the `Outputdata` folder, which HTCondor will bring back to local space after the
+    jobs are done.
 
     Args:
         colin_knob (float): unit setting of the colinearity knob.
+        tilt_stdev (float): mean value of the dpsi tilt distribution applied to quadrupoles.
         lhc_model_dir (str): location of a single model dir for all simulations to tap into.
 
     Returns:
         None, the outputs are analysis results from `omc3` and will be written to disk.
     """
+    quadrupoles = [1, 2, 3, 4, 5, 6]
     logger.debug("Loading observation BPMs from model")
     observation_bpms = tfs.read(f"{lhc_model_dir}/twiss.dat").NAME.tolist()
 
     with Madx() as madx:
-        # ----- Init & Machine ----- #
+        # ----- Init ----- #
         logger.info(f"Running with a colinearity knob setting of {colin_knob:d}")
         madx.option(echo=False, warn=False)
+        madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
+        madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
+
+        # ----- Machine ----- #
         logger.debug("Calling optics")
         # madx.call(fullpath(PATHS["optics2018"] / "lhc_as-built.seq"))  # afs
         # madx.call(fullpath(PATHS["optics2018"] / "PROTON" / "opticsfile.22"))  # afs
         # madx.call(fullpath(PATHS["local"] / "sequences" / "lhc_as-built.seq"))  # local testing
         # madx.call(fullpath(PATHS["local"] / "optics" / "opticsfile.22"))  # local testing
 
-        # ----- Setup ----- #
+        # ----- Setup & Coupling Knob ----- #
         special.re_cycle_sequence(madx, sequence="lhcb1", start="MSIA.EXIT.B1")  # same re-cycling as model
-        orbit_scheme = orbit.setup_lhc_orbit(madx, scheme="flat")
+        _ = orbit.setup_lhc_orbit(madx, scheme="flat")
         special.make_lhc_beams(madx, energy=6500, emittance=3.75e-6)
         madx.use(sequence="lhcb1")
+        special.apply_lhc_coupling_knob(madx, coupling_knob=2e-3, beam=1, telescopic_squeeze=True)
+        matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
+
+        # ----- Errors ----- #
+        logger.info(f"Applying misalignments to IR quads {quadrupoles}")
+        errors.misalign_lhc_ir_quadrupoles(
+            madx,
+            ip=1,
+            beam=1,
+            quadrupoles=quadrupoles,
+            sides="RL",
+            dpsi=f"{tilt_stdev} * TGAUSS(2.5)",
+        )
+        logger.debug("Querying and exporting error table")
+        tilt_errors = tfs.TfsDataFrame(  # only dpsi column to save space
+            madx.table.ir_quads_errors.dframe().loc[:, ["dpsi"]],
+            headers={var.upper(): madx.table.summ[var][0] for var in madx.table.summ},
+        )
+        tfs.write("Outputdata/tilt_errors.tfs", tilt_errors, save_index="name")
 
         # ----- Colin Setting ----- #
         logger.info(f"Applying colinearity knob setting")
         matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.27, 60.36, 2.0, 2.0)  # avoid flip
         special.apply_lhc_colinearity_knob(madx, colinearity_knob_value=colin_knob, ir=1)
-        matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0)  # guarantee
+        matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0)  # working point
         twiss_df: tfs.TfsDataFrame = twiss.get_twiss_tfs(madx).drop(index="IP1.L1")
 
         # ----- Tracking ----- #
@@ -152,7 +180,6 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
     twiss_df[["F1001", "F1010"]] = coupling_df[["F1001", "F1010"]]
     twiss_df_bpm: tfs.TfsDataFrame = twiss_df[twiss_df.KEYWORD == "monitor"]
     twiss_df_bpm = split_rdt_complex_columns(twiss_df_bpm)
-    # twiss_df_bpm = twiss_df_bpm.reset_index().rename(columns={"index": "NAME"})
     tfs.write("Outputdata/coupling_twiss_bpm.tfs", twiss_df_bpm, save_index="NAME")
 
     logger.info("Doing trackone file conversion with omc3's tbt_converter")
@@ -184,9 +211,9 @@ def make_simulation(colin_knob: float, lhc_model_dir: str) -> None:
         outputdir=Path("Outputdata/measured_optics"),
     )
 
-    logger.info("Cleaning up: removing 'trackone' and 'lin_files'")
+    logger.info("Cleaning up: removing 'trackone' files and 'lin_files' folder")
     Path("Outputdata/trackone").unlink()
-    shutil.rmtree("Outputdata/measured_optics/lin_files")
+    shutil.rmtree("Outputdata/measured_optics/lin_files/")
 
 
 # ----- Running ----- #
@@ -199,9 +226,11 @@ if __name__ == "__main__":
         )
     # make_simulation(  # afs run
     #     colin_knob=%(COLIN_KNOB_SETTING)s,
+    #     tilt_stdev=%(TILT_STDEV)s,
     #     lhc_model_dir="%(LHC_MODEL_DIR)s",
     # )
     # make_simulation(  # local testing
     #     colin_knob=3,
+    #     tilt_stdev=5e-4,
     #     lhc_model_dir="/Users/felixsoubelet/cernbox/OMC/Local_Coupling_Correction/8_check_crdts_1bpm/data/lhc_model",
     # )
