@@ -41,7 +41,7 @@ from loguru import logger
 from omc3.hole_in_one import hole_in_one_entrypoint as hole_in_one
 from omc3.tbt_converter import converter_entrypoint as tbt_converter
 from optics_functions.coupling import coupling_via_cmatrix
-from pyhdtoolkit.cpymadtools import matching, orbit, special, track, twiss
+from pyhdtoolkit.cpymadtools import errors, matching, orbit, special, track, twiss
 from pyhdtoolkit.utils import defaults
 
 # ----- Setup ----- #
