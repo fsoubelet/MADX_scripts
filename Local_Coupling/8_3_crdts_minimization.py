@@ -159,7 +159,7 @@ def make_simulation(
         opticsfile (str): name of the optics configuration file to use. Defaults to 'opticsfile.22'.
 
     Returns:
-        None, the outputs are analysis results from `omc3` and will be written to disk.
+        The average CRDT amplitude at inner BPMs. The output from `omc3` analysis will are written to disk.
     """
     kqsx3_left, kqsx3_right = correctors
     logger.info(f"LEFT:\t {kqsx3_left}")
@@ -259,7 +259,7 @@ def make_simulation(
     return result
 
 
-def optimize_crdts(dpsi_mean: float):
+def optimize_crdts(dpsi_mean: float) -> Results:
     """
     Generate an error distribution, run scipy's optimization, run with the optimized parameters and
     return the results.
@@ -306,5 +306,5 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
 
-    simulation_results = optimize_crdts(dpsi_mean=1)  # %(DPSI_MEAN)s,
+    # simulation_results = optimize_crdts(dpsi_mean=%(DPSI_MEAN)s)
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
