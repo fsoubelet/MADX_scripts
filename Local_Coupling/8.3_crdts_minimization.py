@@ -26,9 +26,12 @@ create_instance_and_model(
 Need to provide at HTCondor submission time with `job_submitter`:
 - DPSI_MEAN -> mean value of the DPSI tilt distribution (this one isn't narrow)
 """
+import json
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Union
 
+import cpymad
+import pyhdtoolkit
 import numpy as np
 import tfs
 from cpymad.madx import Madx
@@ -37,7 +40,7 @@ from omc3.hole_in_one import hole_in_one_entrypoint as hole_in_one
 from omc3.tbt_converter import converter_entrypoint as tbt_converter
 from omc3.utils import logging_tools
 from pydantic import BaseModel
-from pyhdtoolkit.cpymadtools import matching, orbit, special, track
+from pyhdtoolkit.cpymadtools import errors, matching, orbit, special, track
 from pyhdtoolkit.utils import defaults
 from scipy.optimize import Bounds, minimize
 
@@ -60,11 +63,11 @@ def fullpath(filepath: Path) -> str:
 
 
 class Results(BaseModel):
-    tilt_mean: float
-    kqsx3_l1_value: float
-    kqsx3_r1_value: float
-    fxy_l1_value: float
-    fxy_r1_value: float
+    tilt_mean: float = None
+    kqsx3_l1_value: float = None
+    kqsx3_r1_value: float = None
+    fxy_l1_value: float = None
+    fxy_r1_value: float = None
 
     def to_json(self, filepath: Union[str, Path]) -> None:
         logger.debug(f"Exporting results structure to '{Path(filepath).absolute()}'")
@@ -264,21 +267,30 @@ def optimize_crdts(dpsi_mean: float):
     generate_errors(tilt_mean=dpsi_mean)
 
     colin_bounds = Bounds([-20, 20], [-20, 20])  # range of values for the left & right KQSX3 correctors
-    optimized_correctors = minimize(make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds)
-    logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
+    try:
+        optimized_correctors = minimize(make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds)
+        logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
 
-    logger.info("Running simulation with optimized setting")
-    make_simulation(optimized_correctors.x)
+        logger.info("Running simulation with optimized setting")
+        make_simulation(optimized_correctors.x)
 
-    logger.info("Exporting final results")
-    F_XY = tfs.read("Outputdata/measured_optics/crdt/skew_quadrupole/F_XY.tfs", index="NAME")
-    return Results(
-        tilt_mean=dpsi_mean,
-        kqsx3_l1_value=optimized_correctors.x[0],
-        kqsx3_r1_value=optimized_correctors.x[1],
-        fxy_l1_value=F_XY[F_XY.index.str.contains('BPMSW.1L1.B1')].AMP.to_numpy()[0],
-        fxy_r1_value=F_XY[F_XY.index.str.contains('BPMSW.1R1.B1')].AMP.to_numpy()[0],
-    )
+        logger.info("Exporting final results")
+        F_XY = tfs.read("Outputdata/measured_optics/crdt/skew_quadrupole/F_XY.tfs", index="NAME")
+        return Results(
+            tilt_mean=dpsi_mean,
+            kqsx3_l1_value=optimized_correctors.x[0],
+            kqsx3_r1_value=optimized_correctors.x[1],
+            fxy_l1_value=F_XY[F_XY.index.str.contains('BPMSW.1L1.B1')].AMP.to_numpy()[0],
+            fxy_r1_value=F_XY[F_XY.index.str.contains('BPMSW.1R1.B1')].AMP.to_numpy()[0],
+        )
+    except:
+         return Results(
+            tilt_mean=None,
+            kqsx3_l1_value=None,
+            kqsx3_r1_value=None,
+            fxy_l1_value=None,
+            fxy_r1_value=None,
+        )
 
 
 # ----- Running ----- #
@@ -291,6 +303,6 @@ if __name__ == "__main__":
         )
 
     simulation_results = optimize_crdts(
-        tilt_mean=%(DPSI_MEAN)s,
+        dpsi_mean=1#%(DPSI_MEAN)s,
     )
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
