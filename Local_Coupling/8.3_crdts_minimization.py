@@ -24,9 +24,7 @@ create_instance_and_model(
 ```
 
 Need to provide at HTCondor submission time with `job_submitter`:
-- LHC_MODEL_DIR -> location of a single model dir for all simulations to tap into
-- COLIN_KNOB_SETTING -> value of the colinearty knob
-- TILT_STDEV -> mean value of the DPSI tilt distribution
+- DPSI_MEAN -> mean value of the DPSI tilt distribution (this one isn't narrow)
 """
 from pathlib import Path
 from typing import Tuple
