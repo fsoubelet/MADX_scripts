@@ -31,10 +31,10 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import cpymad
-import pyhdtoolkit
 import numpy as np
+import pyhdtoolkit
 import tfs
-from cpymad.madx import Madx
+from cpymad.madx import Madx, TwissFailed
 from loguru import logger
 from omc3.hole_in_one import hole_in_one_entrypoint as hole_in_one
 from omc3.tbt_converter import converter_entrypoint as tbt_converter
@@ -54,6 +54,7 @@ PATHS = {
     "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
     "htc_outputdir": Path("Outputdata"),
 }
+
 
 # ----- Utilities ----- #
 
@@ -84,7 +85,7 @@ def generate_errors(tilt_mean: float = 0.0, location: str = "afs", opticsfile: s
     Args:
         tilt_mean (float): mean value of the dpsi tilt distribution when applying to quadrupoles.
         location (str): where the scripts are running, which dictates where to get the lhc sequence and
-            opticsfile. Can be 'local' and 'afs', defaults to 'local'.
+            opticsfile. Can be 'local' and 'afs', defaults to 'afs'.
         opticsfile (str): name of the optics configuration file to use. Defaults to 'opticsfile.22'.
 
     Returns:
@@ -154,7 +155,7 @@ def make_simulation(
         lhc_model_dir (str): location of a single model dir for all simulations to tap into.
         coupling_knob (float): value of the coupling knob.
         location (str): where the scripts are running, which dictates where to get the lhc sequence and
-            opticsfile. Can be 'local' and 'afs', defaults to 'local'.
+            opticsfile. Can be 'local' and 'afs', defaults to 'afs'.
         opticsfile (str): name of the optics configuration file to use. Defaults to 'opticsfile.22'.
 
     Returns:
@@ -267,30 +268,33 @@ def optimize_crdts(dpsi_mean: float):
     generate_errors(tilt_mean=dpsi_mean)
 
     colin_bounds = Bounds([-20, 20], [-20, 20])  # range of values for the left & right KQSX3 correctors
-    try:
-        optimized_correctors = minimize(make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds)
-        logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
+    attempts: int = 0
+    results = None
 
-        logger.info("Running simulation with optimized setting")
-        make_simulation(optimized_correctors.x)
+    # Loop a few times to try and get a decent error generation that allows us to run for the dpsi_mean value
+    while results is not None and attempts < 20:
+        try:
+            optimized_correctors = minimize(
+                make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds
+            )
+            logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
 
-        logger.info("Exporting final results")
-        F_XY = tfs.read("Outputdata/measured_optics/crdt/skew_quadrupole/F_XY.tfs", index="NAME")
-        return Results(
-            tilt_mean=dpsi_mean,
-            kqsx3_l1_value=optimized_correctors.x[0],
-            kqsx3_r1_value=optimized_correctors.x[1],
-            fxy_l1_value=F_XY[F_XY.index.str.contains('BPMSW.1L1.B1')].AMP.to_numpy()[0],
-            fxy_r1_value=F_XY[F_XY.index.str.contains('BPMSW.1R1.B1')].AMP.to_numpy()[0],
-        )
-    except:
-         return Results(
-            tilt_mean=None,
-            kqsx3_l1_value=None,
-            kqsx3_r1_value=None,
-            fxy_l1_value=None,
-            fxy_r1_value=None,
-        )
+            logger.info("Running simulation with optimized setting")
+            make_simulation(optimized_correctors.x)
+
+            logger.info("Exporting final results")
+            F_XY = tfs.read("Outputdata/measured_optics/crdt/skew_quadrupole/F_XY.tfs", index="NAME")
+            results = Results(
+                tilt_mean=dpsi_mean,
+                kqsx3_l1_value=optimized_correctors.x[0],
+                kqsx3_r1_value=optimized_correctors.x[1],
+                fxy_l1_value=F_XY[F_XY.index.str.contains("BPMSW.1L1.B1")].AMP.to_numpy()[0],
+                fxy_r1_value=F_XY[F_XY.index.str.contains("BPMSW.1R1.B1")].AMP.to_numpy()[0],
+            )
+        except TwissFailed:
+            logger.error("Failed configuration!")
+        attempts += 1
+    return results or Results(tilt_mean=dpsi_mean)
 
 
 # ----- Running ----- #
@@ -302,7 +306,5 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
 
-    simulation_results = optimize_crdts(
-        dpsi_mean=1#%(DPSI_MEAN)s,
-    )
+    simulation_results = optimize_crdts(dpsi_mean=1)  # %(DPSI_MEAN)s,
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
