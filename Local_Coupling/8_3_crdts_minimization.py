@@ -141,7 +141,7 @@ def generate_errors(tilt_mean: float = 0.0, location: str = "afs", opticsfile: s
 
 def make_simulation(
     correctors: Tuple[float, float],
-    lhc_model_dir: str = "/afs/cern.ch/work/f/fesoubel/htcondor_results/8.3_minimization_study/lhc_model",
+    lhc_model_dir: str = "/afs/cern.ch/work/f/fesoubel/htcondor_results/lhc_model",
     coupling_knob: float = 2e-3,
     location: str = "afs",
     opticsfile: str = "opticsfile.22",
@@ -272,7 +272,7 @@ def optimize_crdts(dpsi_mean: float) -> Results:
     results = None
 
     # Loop a few times to try and get a decent error generation that allows us to run for the dpsi_mean value
-    while results is not None and attempts < 20:
+    while results is None and attempts < 500:
         try:
             optimized_correctors = minimize(
                 make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds
@@ -306,5 +306,5 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
 
-    # simulation_results = optimize_crdts(dpsi_mean=%(DPSI_MEAN)s)
+    simulation_results = optimize_crdts(dpsi_mean=%(DPSI_MEAN)s)
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
