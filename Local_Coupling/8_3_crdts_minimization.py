@@ -275,7 +275,7 @@ def optimize_crdts(dpsi_mean: float) -> Results:
     while results is None and attempts < 500:
         try:
             optimized_correctors = minimize(
-                make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds
+                make_simulation, x0=[0, 0], method="trust-constr", bounds=colin_bounds
             )
             logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
 
