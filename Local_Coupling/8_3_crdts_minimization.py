@@ -306,5 +306,9 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
 
-    simulation_results = optimize_crdts(dpsi_mean=%(DPSI_MEAN)s)
+    has_converged: bool = False
+    while not has_converged:
+        simulation_results = optimize_crdts(dpsi_mean=%(DPSI_MEAN)s)
+        if simulation_results.fxy_l1_value < 0.1 and simulation_results.fxy_r1_value < 0.1:
+            has_converged = True
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
