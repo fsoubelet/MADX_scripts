@@ -145,6 +145,7 @@ def make_simulation(
     coupling_knob: float = 2e-3,
     location: str = "afs",
     opticsfile: str = "opticsfile.22",
+    average: bool = True,
 ) -> float:
     """
     Get a complete LHC setup, implement coupling knob, implement colinearity knob in IR, perform tracking
@@ -157,6 +158,8 @@ def make_simulation(
         location (str): where the scripts are running, which dictates where to get the lhc sequence and
             opticsfile. Can be 'local' and 'afs', defaults to 'afs'.
         opticsfile (str): name of the optics configuration file to use. Defaults to 'opticsfile.22'.
+        average (bool): if True returns the average of both CRDTs (used for scipy which needs to be returned
+            a scalar), otherwise return left and right value.
 
     Returns:
         The average CRDT amplitude at inner BPMs. The output from `omc3` analysis will are written to disk.
@@ -256,7 +259,14 @@ def make_simulation(
     F_XY = tfs.read("Outputdata/measured_optics/crdt/skew_quadrupole/F_XY.tfs", index="NAME")
     result = F_XY[F_XY.index.str.contains("BPMSW.1[RL]1.B1")].AMP.mean()
     logger.success(f"Resulting mean amplitude of CRDT:\t {result}")
-    return result
+    return (
+        result
+        if average is True
+        else (
+            F_XY[F_XY.index.str.contains("BPMSW.1L1.B1")].AMP.to_numpy()[0],
+            F_XY[F_XY.index.str.contains("BPMSW.1R1.B1")].AMP.to_numpy()[0],
+        )
+    )
 
 
 def optimize_crdts(dpsi_mean: float) -> Results:
@@ -267,7 +277,7 @@ def optimize_crdts(dpsi_mean: float) -> Results:
     logger.info("Generating errors for simulations")
     generate_errors(tilt_mean=dpsi_mean)
 
-    colin_bounds = Bounds([-20, 20], [-20, 20])  # range of values for the left & right KQSX3 correctors
+    colin_bounds = Bounds([-10, 10], [-10, 10])  # range of values for the left & right KQSX3 correctors
     attempts: int = 0
     results = None
 
@@ -275,7 +285,7 @@ def optimize_crdts(dpsi_mean: float) -> Results:
     while results is None and attempts < 500:
         try:
             optimized_correctors = minimize(
-                make_simulation, x0=[-8, -3], method="trust-constr", bounds=colin_bounds
+                make_simulation, x0=[0, 0], method="trust-constr", bounds=colin_bounds
             )
             logger.success(f"Optimized colinearity knob setting: {optimized_correctors.x}")
 
@@ -312,3 +322,9 @@ if __name__ == "__main__":
         if simulation_results.fxy_l1_value < 0.1 and simulation_results.fxy_r1_value < 0.1:
             has_converged = True
     simulation_results.to_json(PATHS["htc_outputdir"] / "results.json")
+
+    left, right = make_simulation(correctors=(0, 0), average=False)
+    uncorrected = Results(
+        tilt_mean=%(DPSI_MEAN)s, kqsx3_l1_value=0, kqsx3_r1_value=0, fxy_l1_value=left, fxy_r1_value=right
+    )
+    uncorrected.to_json(PATHS["htc_outputdir"] / "uncorrected.json")
