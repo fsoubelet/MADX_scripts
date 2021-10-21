@@ -39,13 +39,13 @@ PATHS = {
     "htc_outputdir": Path("Outputdata"),
 }
 
-defaults.config_logger(level="INFO", enqueue=True)  # goes to stdout
-logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
-    PATHS["htc_outputdir"] / "full_pylog.log",
-    format=defaults.LOGURU_FORMAT,
-    enqueue=True,
-    level="DEBUG",
-)
+defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
+#logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
+#    PATHS["htc_outputdir"] / "full_pylog.log",
+#    format=defaults.LOGURU_FORMAT,
+#    enqueue=True,
+#    level="DEBUG",
+#)
 
 
 # ----- Utilities ----- #
@@ -96,7 +96,7 @@ def get_bpms_coupling_rdts(madx: Madx) -> tfs.TfsDataFrame:
 def make_simulation(
         tilt_std: float = 0.0,
         quadrupoles: List[int] = list(range(1, 11)),
-        location: str = "local",  # TODO: change this to 'afs' if you run on CERN services
+        location: str = "afs",  # TODO: change this to 'afs' if you run on CERN services
         opticsfile: str = "opticsfile.22",
 ) -> ScenarioResult:
     """
@@ -117,8 +117,9 @@ def make_simulation(
         A custom dataclass holding both the twiss result including coupling RDTs and the assigned errors
         table.
     """
-    with Madx(stdout=False, command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
-        # ----- Init ----- #
+    #with Madx(stdout=False, command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
+    with Madx(stdout=False) as madx:
+    # ----- Init ----- #
         logger.info(f"Running with a mean tilt of {tilt_std:.1E}")
         madx.option(echo=False, warn=False)
         madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
@@ -163,7 +164,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarr
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
-    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=1)(
+    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=2)(
         delayed(make_simulation)(tilt_std) for _ in range(n_batches)
     )
 
