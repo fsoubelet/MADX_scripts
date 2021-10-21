@@ -117,36 +117,38 @@ def make_simulation(
         A custom dataclass holding both the twiss result including coupling RDTs and the assigned errors
         table.
     """
-    #with Madx(stdout=False, command_log=fullpath(PATHS["htc_outputdir"] / "cpymad_commands.log")) as madx:
-    with Madx(stdout=False) as madx:
-    # ----- Init ----- #
-        logger.info(f"Running with a mean tilt of {tilt_std:.1E}")
-        madx.option(echo=False, warn=False)
-        madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
-        madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
+    try:
+        with Madx(stdout=False) as madx:
+        # ----- Init ----- #
+            logger.info(f"Running with a mean tilt of {tilt_std:.1E}")
+            madx.option(echo=False, warn=False)
+            madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
+            madx.eoption(seed=np.random.randint(1, 999999999))  # not using default seed
 
-        # ----- Machine Setup ----- #
-        call_paths(madx, location, opticsfile)
-        lhc.re_cycle_sequence(madx, sequence="lhcb1", start="MSIA.EXIT.B1")  # same re-cycling as model
-        lhc.make_lhc_beams(madx, energy=7000, emittance=3.75e-6)
-        madx.command.use(sequence="lhcb1")
-        # Tunes are matched from opticsfile and no modification was made so
-        # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
+            # ----- Machine Setup ----- #
+            call_paths(madx, location, opticsfile)
+            lhc.re_cycle_sequence(madx, sequence="lhcb1", start="MSIA.EXIT.B1")  # same re-cycling as model
+            lhc.make_lhc_beams(madx, energy=7000, emittance=3.75e-6)
+            madx.command.use(sequence="lhcb1")
+            # Tunes are matched from opticsfile and no modification was made so
+            # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
-        # ----- Introduce Errors, Twiss and RDTs ----- #
-        logger.info(f"Introducing tilts in IR quadrupoles")  # small values so we don't need coupling knobs
-        errors.misalign_lhc_ir_quadrupoles(
-            madx,
-            ips=[1, 2, 5, 8],
-            beam=1,
-            quadrupoles=quadrupoles,
-            sides="RL",
-            dpsi=f"{tilt_std} * TGAUSS(2.5)",
-            table="ir_quads_errors",
-        )
-        coupling_rdts = get_bpms_coupling_rdts(madx)
-        known_errors = utils.get_table_tfs(madx, table_name="ir_quads_errors").set_index("NAME")
-    return ScenarioResult(tilt_std, coupling_rdts, known_errors)
+            # ----- Introduce Errors, Twiss and RDTs ----- #
+            logger.info(f"Introducing tilts in IR quadrupoles")  # small values so we don't need coupling knobs
+            errors.misalign_lhc_ir_quadrupoles(
+                madx,
+                ips=[1, 2, 5, 8],
+                beam=1,
+                quadrupoles=quadrupoles,
+                sides="RL",
+                dpsi=f"{tilt_std} * TGAUSS(2.5)",
+                table="ir_quads_errors",
+            )
+            coupling_rdts = get_bpms_coupling_rdts(madx)
+            known_errors = utils.get_table_tfs(madx, table_name="ir_quads_errors").set_index("NAME")
+        return ScenarioResult(tilt_std, coupling_rdts, known_errors)
+    except:
+        return 1
 
 
 def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarray, np.ndarray]:
@@ -164,9 +166,10 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarr
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
-    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=2)(
+    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=10)(
         delayed(make_simulation)(tilt_std) for _ in range(n_batches)
     )
+    results = [res for res in results if isinstance(res, ScenarioResult)]
 
     logger.info("Stacking input data to a single dimensional array")
     inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
@@ -182,11 +185,11 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    ml_inputs, ml_outputs = gather_batches(tilt_std=1e-5, n_batches=15_000)
+    ml_inputs, ml_outputs = gather_batches(tilt_std=1e-5, n_batches=50)
 
     # ----- Save to disk ----- #
     # Load back easily with, for instance for inputs:
     # with np.load("inputs.npz") as data:
     #     ml_inputs = list(data.values())
-    np.savez("/afs/cern.ch/work/f/fesoubel/inputs.npz", inputs)
-    np.savez("/afs/cern.ch/work/f/fesoubel/outputs.npz", ouputs)
+    np.savez("/afs/cern.ch/work/f/fesoubel/inputs.npz", ml_inputs)
+    np.savez("/afs/cern.ch/work/f/fesoubel/outputs.npz", ml_outputs)
