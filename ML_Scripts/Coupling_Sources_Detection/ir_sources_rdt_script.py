@@ -40,12 +40,12 @@ PATHS = {
 }
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
-#logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
+# logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
 #    PATHS["htc_outputdir"] / "full_pylog.log",
 #    format=defaults.LOGURU_FORMAT,
 #    enqueue=True,
 #    level="DEBUG",
-#)
+# )
 
 
 # ----- Utilities ----- #
@@ -96,7 +96,7 @@ def get_bpms_coupling_rdts(madx: Madx) -> tfs.TfsDataFrame:
 def make_simulation(
         tilt_std: float = 0.0,
         quadrupoles: List[int] = list(range(1, 11)),
-        location: str = "afs",  # TODO: change this to 'afs' if you run on CERN services
+        location: str = "afs",
         opticsfile: str = "opticsfile.22",
 ) -> ScenarioResult:
     """
@@ -119,7 +119,7 @@ def make_simulation(
     """
     try:
         with Madx(stdout=False) as madx:
-        # ----- Init ----- #
+            # ----- Init ----- #
             logger.info(f"Running with a mean tilt of {tilt_std:.1E}")
             madx.option(echo=False, warn=False)
             madx.option(rand="best", randid=np.random.randint(1, 11))  # random number generator
