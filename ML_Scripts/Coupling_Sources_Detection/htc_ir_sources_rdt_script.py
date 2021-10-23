@@ -178,8 +178,8 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     results = [res for res in results if isinstance(res, ScenarioResult)]
 
     logger.info("Stacking input data to a single dimensional array")
-    inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
-    outputs = [res.error_table.DPSI.to_numpy() for res in results]
+    ml_inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
+    ml_outputs = [res.error_table.DPSI.to_numpy() for res in results]
 
     logging.info("Writing training dataset to disk")
     np.savez("Outputdata/inputs.npz", ml_inputs)
@@ -194,5 +194,5 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    # gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
+    gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
 
