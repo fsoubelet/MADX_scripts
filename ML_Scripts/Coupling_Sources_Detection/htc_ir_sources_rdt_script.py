@@ -4,9 +4,8 @@ errors introduced as well as the calculated coupling RDTs from 'optics_functions
 
 For this script, the errors are distributed with a prodived standard deviation according to the MAD-X
 'value * TGAUSS(2.5)' command, with the standard deviation value being provided at the commandline (or by the
-htcondor_submitter). Errors are at the moment distributed to all IR quadrupoles for IRs 1, 2, 5 and 8 (the
-ones with IP points). This script can easily be cloned and adapted to introduce a TGAUSS dpsi distribution
-on all quadrupoles in the machine.
+htcondor_submitter). Errors are distributed to all IR quadrupoles for IRs 1, 2, 5 and 8 (the ones with IP
+points).
 
 Seeds run concurrently through joblib's threading backend. If using HTCondor, make sure to request enough
 CPUs when increasing the number of seeds, or your jobs will run out of memory.
@@ -194,5 +193,5 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
+    # gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
 
