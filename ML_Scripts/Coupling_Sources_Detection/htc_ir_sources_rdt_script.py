@@ -168,7 +168,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
-    n_threads = int(multiprocessing.cpu_count() / 2)  # to ease the memory stress on HTCondor nodes
+    n_threads = int(multiprocessing.cpu_count()) # / 2)  # to ease the memory stress on HTCondor nodes
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")

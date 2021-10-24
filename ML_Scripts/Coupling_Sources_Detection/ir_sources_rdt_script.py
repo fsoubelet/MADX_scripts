@@ -40,12 +40,6 @@ PATHS = {
 }
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
-# logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
-#    PATHS["htc_outputdir"] / "full_pylog.log",
-#    format=defaults.LOGURU_FORMAT,
-#    enqueue=True,
-#    level="DEBUG",
-# )
 
 
 # ----- Utilities ----- #
