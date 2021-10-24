@@ -189,5 +189,5 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    # gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
+    gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
 

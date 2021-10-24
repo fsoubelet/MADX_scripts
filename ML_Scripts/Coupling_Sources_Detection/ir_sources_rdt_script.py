@@ -155,11 +155,13 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarr
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
-    n_threads = int(multiprocessing.cpu_count())  # / 2)  # to ease the memory stress on HTCondor nodes
+    n_threads = int(multiprocessing.cpu_count())
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
-    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=10)(
+    # Setting verbose >= 50 so that joblib streams progress to stdout and not stderr
+    # Lots of output -> pipe and filter every 100 iterations with 'python ... 2>/dev/null/ | rg "00 tasks"'
+    results: List[ScenarioResult] = Parallel(n_jobs=n_threads, backend="threading", verbose=50)(
         delayed(make_simulation)(tilt_std) for _ in range(n_batches)
     )
     results = [res for res in results if isinstance(res, ScenarioResult)]
@@ -178,7 +180,7 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    ml_inputs, ml_outputs = gather_batches(tilt_std=1e-5, n_batches=50)
+    ml_inputs, ml_outputs = gather_batches(tilt_std=1e-5, n_batches=1000)
 
     # ----- Save to disk ----- #
     # Load back easily with, for instance for inputs:
