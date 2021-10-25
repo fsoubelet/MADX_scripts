@@ -46,10 +46,10 @@ PATHS = {
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
 logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
-   PATHS["htc_outputdir"] / "full_pylog.log",
-   format=defaults.LOGURU_FORMAT,
-   enqueue=True,
-   level="DEBUG",
+    PATHS["htc_outputdir"] / "full_pylog.log",
+    format=defaults.LOGURU_FORMAT,
+    enqueue=True,
+    level="DEBUG",
 )
 
 
@@ -99,10 +99,10 @@ def get_bpms_coupling_rdts(madx: Madx) -> tfs.TfsDataFrame:
 
 
 def make_simulation(
-        tilt_std: float = 0.0,
-        quadrupoles: List[int] = list(range(1, 11)),
-        location: str = "afs",
-        opticsfile: str = "opticsfile.22",
+    tilt_std: float = 0.0,
+    quadrupoles: List[int] = list(range(1, 11)),
+    location: str = "afs",
+    opticsfile: str = "opticsfile.22",
 ) -> ScenarioResult:
     """
     Get a complete LHC setup, implement coupling sources as tilt errors in the desired IR quadrupoles. The
@@ -139,7 +139,9 @@ def make_simulation(
             # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
             # ----- Introduce Errors, Twiss and RDTs ----- #
-            logger.info(f"Introducing tilts in IR quadrupoles")  # small values so we don't need coupling knobs
+            logger.info(
+                f"Introducing tilts in IR quadrupoles"
+            )  # small values so we don't need coupling knobs
             errors.misalign_lhc_ir_quadrupoles(
                 madx,
                 ips=[1, 2, 5, 8],
@@ -167,7 +169,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
-    n_threads = int(multiprocessing.cpu_count()) # / 2)  # to ease the memory stress on HTCondor nodes
+    n_threads = int(multiprocessing.cpu_count())  # / 2)  # to ease the memory stress on HTCondor nodes
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
@@ -194,4 +196,3 @@ if __name__ == "__main__":
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
     # gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
-

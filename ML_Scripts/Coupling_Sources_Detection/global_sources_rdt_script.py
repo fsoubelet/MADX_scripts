@@ -9,13 +9,14 @@ htcondor_submitter). Errors are distributed to all quadrupoles.
 Seeds run concurrently through joblib's threading backend. If using HTCondor, make sure to request enough
 CPUs when increasing the number of seeds, or your jobs will run out of memory.
 
-NOTE: this script requires pyhdtoolkit >= 0.15.1
+NOTE: this script requires pyhdtoolkit >= 0.15.1 and click >= 8.0
 """
 import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
+import click
 import cpymad
 import numpy as np
 import pyhdtoolkit
@@ -81,6 +82,7 @@ def get_bpms_coupling_rdts(madx: Madx) -> tfs.TfsDataFrame:
     twiss_tfs.NAME = twiss_tfs.NAME.str.upper()
     return coupling_via_cmatrix(twiss_tfs, complex_columns=False, output=["rdts"])
 
+
 def apply_dpsi_to_all_quads(madx: Madx, tilt_std: float = 0.0) -> None:
     """Apply a the provided stdev as a TGAUSS(2.5) to all LHC quads in the machine."""
     madx.command.select(flag="error", clear=True)
@@ -89,14 +91,14 @@ def apply_dpsi_to_all_quads(madx: Madx, tilt_std: float = 0.0) -> None:
     madx.command.etable(table="quad_errors")  # save errors in table
     madx.select(flag="error", clear=True)  # cleanup the flag
 
+
 # ----- Simulation ----- #
 
 
 def make_simulation(
-        tilt_std: float = 0.0,
-        quadrupoles: List[int] = list(range(1, 11)),
-        location: str = "afs",
-        opticsfile: str = "opticsfile.22",
+    tilt_std: float = 0.0,
+    location: str = "afs",
+    opticsfile: str = "opticsfile.22",
 ) -> ScenarioResult:
     """
     Get a complete LHC setup, implement coupling sources as tilt errors in the desired IR quadrupoles. The
@@ -106,8 +108,6 @@ def make_simulation(
     Args:
         tilt_std (float): standard dev of the dpsi tilt distribution when applying to quadrupoles. To be
             provided throught htcondor submitter if running in CERN batch.
-        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to all IR quads (applied
-            on both sides of IP), to be provided throught htcondor submitter if running in CERN batch.
         location (str): where the scripts are running, which dictates where to get the lhc sequence and
             opticsfile. Can be 'local' and 'afs', defaults to 'afs'.
         opticsfile (str): name of the optics configuration file to use. Defaults to 'opticsfile.22'.
@@ -133,7 +133,9 @@ def make_simulation(
             # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
             # ----- Introduce Errors, Twiss and RDTs ----- #
-            logger.info(f"Introducing tilts in IR quadrupoles")  # small values so we don't need coupling knobs
+            logger.info(
+                f"Introducing tilts in IR quadrupoles"
+            )  # small values so we don't need coupling knobs
             apply_dpsi_to_all_quads(madx, tilt_std=tilt_std)
             coupling_rdts = get_bpms_coupling_rdts(madx)
             known_errors = utils.get_table_tfs(madx, table_name="quad_errors").set_index("NAME")
@@ -173,16 +175,43 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarr
 # ----- Running ----- #
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option(
+    "--tilt_std",
+    type=click.FloatRange(min=0),
+    required=True,
+    default=0,
+    show_default=True,
+    help="Standard dev of the dpsi tilt distribution applied to IR quadrupoles"
+)
+@click.option(
+    "--n_batches",
+    type=click.IntRange(min=0),
+    required=True,
+    default=50,
+    show_default=True,
+    help="Number of simulations to run to generate the data",
+)
+@click.option(
+    "--outputdir",
+    type=click.Path(resolve_path=True, path_type=Path),
+    required=True,
+    help="Output directory in which to write the training data files.",
+)
+def main(tilt_std: float, n_batches: int, outputdir: Path) -> None:
+    """
+    Run 'n_batches' simulations and gather all data to create a training set, output at the desired
+    location.
+    """
     with Madx(stdout=False) as mad:
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    ml_inputs, ml_outputs = gather_batches(tilt_std=1e-5, n_batches=10000)
 
-    # ----- Save to disk ----- #
-    # Load back easily with, for instance for inputs:
-    # with np.load("inputs.npz") as data:
-    #     ml_inputs = list(data.values())
-    np.savez("/afs/cern.ch/work/f/fesoubel/htcondor_results/ml_training/global_sources_inputs.npz", ml_inputs)
-    np.savez("/afs/cern.ch/work/f/fesoubel/htcondor_results/ml_training/global_sources_outputs.npz", ml_outputs)
+    ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches)
+    np.savez(outputdir / f"{n_batches:d}_sims_global_sources_inputs.npz", ml_inputs)
+    np.savez(outputdir / f"{n_batches:d}_sims_global_sources_outputs.npz", ml_outputs)
+
+
+if __name__ == "__main__":
+    main()

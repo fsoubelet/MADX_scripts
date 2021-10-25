@@ -45,10 +45,10 @@ PATHS = {
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
 logger.add(  # only kicks in on htcondor or if you create 'Outputdata'
-   PATHS["htc_outputdir"] / "full_pylog.log",
-   format=defaults.LOGURU_FORMAT,
-   enqueue=True,
-   level="DEBUG",
+    PATHS["htc_outputdir"] / "full_pylog.log",
+    format=defaults.LOGURU_FORMAT,
+    enqueue=True,
+    level="DEBUG",
 )
 
 
@@ -102,13 +102,14 @@ def apply_dpsi_to_all_quads(madx: Madx, tilt_std: float = 0.0) -> None:
     madx.command.etable(table="quad_errors")  # save errors in table
     madx.select(flag="error", clear=True)  # cleanup the flag
 
+
 # ----- Simulation ----- #
 
 
 def make_simulation(
-        tilt_std: float = 0.0,
-        location: str = "afs",
-        opticsfile: str = "opticsfile.22",
+    tilt_std: float = 0.0,
+    location: str = "afs",
+    opticsfile: str = "opticsfile.22",
 ) -> ScenarioResult:
     """
     Get a complete LHC setup, implement coupling sources as tilt errors in the desired IR quadrupoles. The
@@ -143,7 +144,9 @@ def make_simulation(
             # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
             # ----- Introduce Errors, Twiss and RDTs ----- #
-            logger.info(f"Introducing tilts in all quadrupoles")  # small values so we don't need coupling knobs
+            logger.info(
+                f"Introducing tilts in all quadrupoles"
+            )  # small values so we don't need coupling knobs
             apply_dpsi_to_all_quads(madx, tilt_std=tilt_std)
             coupling_rdts = get_bpms_coupling_rdts(madx)
             known_errors = utils.get_table_tfs(madx, table_name="quad_errors").set_index("NAME")
@@ -163,7 +166,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
-    n_threads = int(multiprocessing.cpu_count()) # / 2)  # to ease the memory stress on HTCondor nodes
+    n_threads = int(multiprocessing.cpu_count())  # / 2)  # to ease the memory stress on HTCondor nodes
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
@@ -189,5 +192,4 @@ if __name__ == "__main__":
         logger.critical(
             f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
         )
-    gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
-
+    # gather_batches(tilt_std=%(DPSI_STD)s, n_batches=%(SEEDS)s)
