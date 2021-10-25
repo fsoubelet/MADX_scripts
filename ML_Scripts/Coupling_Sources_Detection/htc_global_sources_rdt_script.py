@@ -180,8 +180,8 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     ml_outputs = [res.error_table.DPSI.to_numpy() for res in results]
 
     logging.info("Writing training dataset to disk")
-    np.savez("Outputdata/inputs.npy", np.array(ml_inputs))
-    np.savez("Outputdata/outputs.npy", np.array(ml_outputs))
+    np.save("Outputdata/inputs.npy", np.array(ml_inputs))
+    np.save("Outputdata/outputs.npy", np.array(ml_outputs))
 
 
 # ----- Running ----- #
