@@ -147,7 +147,7 @@ def make_simulation(
         return 1
 
 
-def gather_batches(tilt_std: float = 0.0, n_batches: int = 50, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarray, np.ndarray]:
     """
     Parallelize batches of different runs.
 
@@ -172,7 +172,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50, **kwargs) -> Tupl
     logger.info("Stacking input data to a single dimensional array")
     inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
     outputs = [res.error_table.DPSI.to_numpy() for res in results]
-    return inputs, outputs
+    return np.array(inputs), np.array(outputs)
 
 
 # ----- Running ----- #
@@ -212,8 +212,8 @@ def main(tilt_std: float, n_batches: int, outputdir: Path) -> None:
         )
 
     ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches)
-    np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npz", ml_inputs)
-    np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npz", ml_outputs)
+    np.save(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npy", ml_inputs)
+    np.save(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npy", ml_outputs)
 
 
 if __name__ == "__main__":
