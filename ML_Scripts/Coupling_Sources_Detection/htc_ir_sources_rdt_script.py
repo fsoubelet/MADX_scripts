@@ -12,10 +12,15 @@ CPUs when increasing the number of seeds, or your jobs will run out of memory.
 
 NOTE: this script requires pyhdtoolkit >= 0.15.1
 
-
 Need to provide at HTCondor submission time with `job_submitter`:
 - DPSI_STD -> standard deviation of the DPSI tilt distribution (this one isn't narrow)
 - SEEDS -> the number of different scenarios gathered in this run
+
+The lists of np.ndarrays are saved in .npz format, and can be loaded back with:
+```python
+with np.load("inputs.npz") as data:
+    ml_inputs = list(data.values())[0]
+```
 """
 import logging
 import multiprocessing
@@ -183,8 +188,8 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> None:
     ml_outputs = [res.error_table.DPSI.to_numpy() for res in results]
 
     logging.info("Writing training dataset to disk")
-    np.save("Outputdata/inputs.npy", np.array(ml_inputs))
-    np.save("Outputdata/outputs.npy", np.array(ml_outputs))
+    np.savez("Outputdata/inputs.npz", ml_inputs)
+    np.savez("Outputdata/outputs.npz", ml_outputs)
 
 
 # ----- Running ----- #

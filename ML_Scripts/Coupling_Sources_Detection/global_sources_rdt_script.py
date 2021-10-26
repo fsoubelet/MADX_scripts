@@ -10,6 +10,12 @@ Seeds run concurrently through joblib's threading backend. If using HTCondor, ma
 CPUs when increasing the number of seeds, or your jobs will run out of memory.
 
 NOTE: this script requires pyhdtoolkit >= 0.15.1 and click >= 8.0
+
+The lists of np.ndarrays are saved in .npz format, and can be loaded back with:
+```python
+with np.load("inputs.npz") as data:
+    ml_inputs = list(data.values())[0]
+```
 """
 import multiprocessing
 from dataclasses import dataclass
@@ -144,7 +150,7 @@ def make_simulation(
         return 1
 
 
-def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarray, np.ndarray]:
+def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Parallelize batches of different runs.
 
@@ -169,7 +175,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[np.ndarr
     logger.info("Stacking input data to a single dimensional array")
     inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
     outputs = [res.error_table.DPSI.to_numpy() for res in results]
-    return np.array(inputs), np.array(outputs)
+    return inputs, outputs
 
 
 # ----- Running ----- #
@@ -209,8 +215,8 @@ def main(tilt_std: float, n_batches: int, outputdir: Path) -> None:
         )
 
     ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches)
-    np.save(outputdir / f"{n_batches:d}_sims_global_sources_inputs.npy", ml_inputs)
-    np.save(outputdir / f"{n_batches:d}_sims_global_sources_outputs.npy", ml_outputs)
+    np.savez(outputdir / f"{n_batches:d}_sims_global_sources_inputs.npz", ml_inputs)
+    np.savez(outputdir / f"{n_batches:d}_sims_global_sources_outputs.npz", ml_outputs)
 
 
 if __name__ == "__main__":
