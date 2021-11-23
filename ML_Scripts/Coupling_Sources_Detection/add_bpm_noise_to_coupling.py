@@ -102,9 +102,9 @@ def main(input: Path, max_ir_number: int, ir_stdev: float, arc_stdev: float) -> 
         add_noise_to_ir_bpms(dataframe, max_ir_number, ir_stdev)
         add_noise_to_arc_bpms(dataframe, max_ir_number, arc_stdev)
 
-    logger.info(f"Stacking dataframes and exporting")
+    output_file = input.with_stem(input.stem + "_noised").with_suffix(".npz")   # type: Path
+    logger.info(f"Stacking dataframes and exporting to '{output_file}'")
     data_stacked = [np.hstack(df.to_numpy()) for df in data]
-    output_file = input.with_name(input.name + "_noised").with_suffix(".npy")
     np.savez(output_file, data_stacked)
 
 
