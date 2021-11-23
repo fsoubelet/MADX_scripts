@@ -16,6 +16,7 @@ import click
 import numpy as np
 import pandas as pd
 from loguru import logger
+from rich.progress import track
 
 RNG = np.random.default_rng()
 IR_BPM_REGEX = r"BPM\S?\S?\.[0-{max_index}][LR][1258]\.*"
@@ -35,7 +36,7 @@ def add_noise_to_ir_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][df.index.str.match(ir_bpms)] += RNG.normal(0, stdev, array_length)
+        df[column][df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
 
 
 def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None:
@@ -50,7 +51,7 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][~df.index.str.match(ir_bpms)] += RNG.normal(0, stdev, array_length)
+        df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
 
 
 # ----- Running ----- #
