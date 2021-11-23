@@ -29,10 +29,10 @@ def add_noise_to_ir_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None
     Selects the appropriate BPMs according to the max index provided, and add gaussian noise
     to each column with the provided standard deviation. Modifies inplace!
     """
-    logger.debug(f"Adding noise to IR BPMs")
+    logger.trace(f"Adding noise to IR BPMs")
     ir_bpms = IR_BPM_REGEX.format(max_index=max_index)
     array_length = len(df[df.index.str.match(ir_bpms, case=False)])
-    logger.debug(f"Number of affected BPMs: {array_length}")
+    logger.trace(f"Number of affected BPMs: {array_length}")
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
@@ -44,10 +44,10 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
     Selects the appropriate BPMs according to the max index provided, and add gaussian noise
     to each column with the provided standard deviation. Modifies inplace!
     """
-    logger.debug(f"Adding noise to arc BPMs")
+    logger.trace(f"Adding noise to arc BPMs")
     ir_bpms = IR_BPM_REGEX.format(max_index=max_index)  # regex for that max index
     array_length = len(df[~df.index.str.match(ir_bpms, case=False)])
-    logger.debug(f"Number of affected BPMs: {array_length}")
+    logger.trace(f"Number of affected BPMs: {array_length}")
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
@@ -98,7 +98,7 @@ def main(input: Path, max_ir_number: int, ir_stdev: float, arc_stdev: float) -> 
         data: List[pd.DataFrame] = pickle.load(file)
 
     logger.info(f"Adding noise to BPMs")
-    for dataframe in data:
+    for dataframe in track(data, description="Adding noise to BPMs"):
         add_noise_to_ir_bpms(dataframe, max_ir_number, ir_stdev)
         add_noise_to_arc_bpms(dataframe, max_ir_number, arc_stdev)
 
