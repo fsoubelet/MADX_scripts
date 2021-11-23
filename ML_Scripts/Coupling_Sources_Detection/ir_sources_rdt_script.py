@@ -19,13 +19,15 @@ with np.load("inputs.npz") as data:
 ```
 """
 import multiprocessing
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import List, Tuple, Union
 
 import click
 import cpymad
 import numpy as np
+import pandas as pd
 import pyhdtoolkit
 import tfs
 from cpymad.madx import Madx
@@ -41,7 +43,7 @@ from pyhdtoolkit.utils import defaults
 
 PATHS = {
     "optics2018": Path("/afs/cern.ch/eng/lhc/optics/runII/2018"),
-    "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
+    "local": Path.home() / "cernbox" / "OMC" / "MADX_scripts" / "Local_Coupling",
     "htc_outputdir": Path("Outputdata"),
 }
 
@@ -77,7 +79,7 @@ def call_paths(madx: Madx, location: str = "afs", opticsfile: str = "opticsfile.
         raise ValueError("The 'location' parameter should be either 'afs' or 'local'.")
 
 
-def get_bpms_coupling_rdts(madx: Madx) -> tfs.TfsDataFrame:
+def get_bpms_coupling_rdts(madx: Madx) -> pd.DataFrame:
     """
     Run a TWISS for all BPMs on the currently active sequence, compute RDTs through CMatrix approach and
     return the  aggregated results.
@@ -134,9 +136,7 @@ def make_simulation(
             # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
             # ----- Introduce Errors, Twiss and RDTs ----- #
-            logger.info(
-                f"Introducing tilts in IR quadrupoles"
-            )  # small values so we don't need coupling knobs
+            logger.info(f"Introducing tilts in IR quadrupoles")  # small values so we don't need coupling knobs
             errors.misalign_lhc_ir_quadrupoles(
                 madx,
                 ips=[1, 2, 5, 8],
@@ -153,7 +153,9 @@ def make_simulation(
         return 1
 
 
-def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def gather_batches(
+    tilt_std: float = 0.0, n_batches: int = 50, returns: str = "numpy"
+) -> Tuple[List[Union[pd.DataFrame, np.ndarray]], List[Union[pd.DataFrame, np.ndarray]]]:
     """
     Parallelize batches of different runs.
 
@@ -161,6 +163,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.
         tilt_std (float): standard dev of the dpsi tilt distribution when applying to quadrupoles. To be
             provided throught htcondor submitter if running in CERN batch.
         n_batches (int): the number of batches to run.
+        returns (str): the format in which to return results, either 'numpy' or 'pandas'.
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
@@ -175,9 +178,12 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.
     )
     results = [res for res in results if isinstance(res, ScenarioResult)]
 
-    logger.info("Stacking input data to a single dimensional array")
-    inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
-    outputs = [res.error_table.DPSI.to_numpy() for res in results]
+    if returns == "numpy":
+        inputs = [np.hstack(res.coupling_rdts.to_numpy()) for res in results]
+        outputs = [res.error_table.DPSI.to_numpy() for res in results]
+    else:
+        inputs = [res.coupling_rdts for res in results]
+        outputs = [res.error_table.DPSI for res in results]
     return inputs, outputs
 
 
@@ -207,19 +213,33 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.
     required=True,
     help="Output directory in which to write the training data files.",
 )
-def main(tilt_std: float, n_batches: int, outputdir: Path) -> None:
+@click.option(
+    "--returns",
+    type=str,
+    default="numpy",
+    show_default=True,
+    help="The format in which to return the data. Can be 'numpy' (results in .npz files) or 'pandas'"
+    "(results in pickled dataframes). Defaults to 'numpy'.",
+)
+def main(tilt_std: float, n_batches: int, outputdir: Path, returns: str) -> None:
     """
     Run 'n_batches' simulations and gather all data to create a training set, output at the desired
     location.
     """
+    assert returns in ("numpy", "pandas"), "Invalid value for 'returns' option."
     with Madx(stdout=False) as mad:
-        logger.critical(
-            f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}"
-        )
+        logger.critical(f"Using: pyhdtoolkit {pyhdtoolkit.__version__} | cpymad {cpymad.__version__}  | {mad.version}")
 
-    ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches)
-    np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npz", ml_inputs)
-    np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npz", ml_outputs)
+    ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches, returns=returns)
+
+    if returns == "numpy":
+        np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npz", ml_inputs)
+        np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npz", ml_outputs)
+    else:
+        with (outputdir / f"{n_batches:d}_sims_ir_sources_inputs.pkl").open("wb") as file:
+            pickle.dump(ml_inputs, file)
+        with (outputdir / f"{n_batches:d}_sims_ir_sources_outputs.pkl").open("wb") as file:
+            pickle.dump(ml_outputs, file)
 
 
 if __name__ == "__main__":

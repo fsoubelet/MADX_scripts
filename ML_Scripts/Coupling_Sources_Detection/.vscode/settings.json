@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/home/felix/miniconda3/envs/PHD/bin/python",
+    "python.formatting.provider": "black"
+}

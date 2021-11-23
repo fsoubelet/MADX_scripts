@@ -40,7 +40,7 @@ from pyhdtoolkit.utils import defaults
 
 PATHS = {
     "optics2018": Path("/afs/cern.ch/eng/lhc/optics/runII/2018"),
-    "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
+    "local": Path.home() / "cernbox" / "OMC" / "MADX_scripts" / "Local_Coupling",
     "htc_outputdir": Path("Outputdata"),
 }
 
@@ -188,7 +188,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[np.
     required=True,
     default=0,
     show_default=True,
-    help="Standard dev of the dpsi tilt distribution applied to IR quadrupoles"
+    help="Standard dev of the dpsi tilt distribution applied to IR quadrupoles",
 )
 @click.option(
     "--n_batches",

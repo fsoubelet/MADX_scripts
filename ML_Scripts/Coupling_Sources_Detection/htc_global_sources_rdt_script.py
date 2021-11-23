@@ -44,7 +44,7 @@ from pyhdtoolkit.utils import defaults
 
 PATHS = {
     "optics2018": Path("/afs/cern.ch/eng/lhc/optics/runII/2018"),
-    "local": Path("/Users/felixsoubelet/cernbox/OMC/MADX_scripts/Local_Coupling"),
+    "local": Path.home() / "cernbox" / "OMC" / "MADX_scripts" / "Local_Coupling",
     "htc_outputdir": Path("Outputdata"),
 }
 
