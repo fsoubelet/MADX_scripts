@@ -58,7 +58,7 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
 
 @click.command()
 @click.option(
-    "--intput",
+    "--input",
     type=click.Path(resolve_path=True, path_type=Path),
     required=True,
     help="Path to the input file to load.",
