@@ -10,7 +10,7 @@ python add_bpm_noise_to_coupling.py --input <your_file> --max_ir_number=6 --ir_s
 import pickle
 from logging import log
 from pathlib import Path
-from typing import List
+from typing import List, Match
 
 import click
 import numpy as np
@@ -30,7 +30,7 @@ def add_noise_to_ir_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None
     """
     logger.debug(f"Adding noise to IR BPMs")
     ir_bpms = IR_BPM_REGEX.format(max_index=max_index)
-    array_length = len(df[df.index.str.match(ir_bpms)])
+    array_length = len(df[df.index.str.match(ir_bpms, case=False)])
     logger.debug(f"Number of affected BPMs: {array_length}")
 
     for column in df.columns:
@@ -45,7 +45,7 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
     """
     logger.debug(f"Adding noise to arc BPMs")
     ir_bpms = IR_BPM_REGEX.format(max_index=max_index)  # regex for that max index
-    array_length = len(df[~df.index.str.match(ir_bpms)])
+    array_length = len(df[~df.index.str.match(ir_bpms, case=False)])
     logger.debug(f"Number of affected BPMs: {array_length}")
 
     for column in df.columns:
