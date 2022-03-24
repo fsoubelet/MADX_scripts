@@ -36,7 +36,9 @@ def add_noise_to_ir_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
+        df[column][df.index.str.match(ir_bpms, case=False)] += RNG.normal(
+            0, stdev, array_length
+        )
 
 
 def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None:
@@ -51,7 +53,9 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
+        df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(
+            0, stdev, array_length
+        )
 
 
 # ----- Running ----- #
@@ -102,7 +106,9 @@ def main(input: Path, max_ir_number: int, ir_stdev: float, arc_stdev: float) -> 
         add_noise_to_ir_bpms(dataframe, max_ir_number, ir_stdev)
         add_noise_to_arc_bpms(dataframe, max_ir_number, arc_stdev)
 
-    output_file = input.with_stem(input.stem + "_noised").with_suffix(".npz")   # type: Path
+    output_file = input.with_stem(input.stem + "_noised").with_suffix(
+        ".npz"
+    )  # type: Path
     logger.info(f"Stacking dataframes and exporting to '{output_file}'")
     data_stacked = [np.hstack(df.to_numpy()) for df in data]
     np.savez(output_file, data_stacked)

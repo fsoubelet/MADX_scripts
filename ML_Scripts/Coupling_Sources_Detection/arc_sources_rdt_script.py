@@ -4,13 +4,12 @@ errors introduced as well as the calculated coupling RDTs from 'optics_functions
 
 For this script, the errors are distributed with a prodived standard deviation according to the MAD-X
 'value * TGAUSS(2.5)' command, with the standard deviation value being provided at the commandline (or by the
-htcondor_submitter). Errors are distributed to all IR quadrupoles for IRs 1, 2, 5 and 8 (the ones with IP
-points).
+htcondor_submitter). Errors are distributed to all quadrupoles.
 
 Seeds run concurrently through joblib's threading backend. If using HTCondor, make sure to request enough
 CPUs when increasing the number of seeds, or your jobs will run out of memory.
 
-NOTE: this script requires pyhdtoolkit >= 0.17.0 and click >= 8.0
+NOTE: this script requires pyhdtoolkit >= 0.15.1 and click >= 8.0
 
 The lists of np.ndarrays are saved in .npz format, and can be loaded back with:
 ```python
@@ -25,9 +24,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Union
-from uuid import uuid4
 
 import click
+import cpymad
 import numpy as np
 import pandas as pd
 import tfs
@@ -36,6 +35,8 @@ from cpymad.madx import Madx
 from joblib import Parallel, delayed
 from loguru import logger
 from optics_functions.coupling import coupling_via_cmatrix
+
+import pyhdtoolkit
 
 from pyhdtoolkit.cpymadtools import errors, lhc, matching, twiss, utils
 from pyhdtoolkit.cpymadtools.constants import MONITOR_TWISS_COLUMNS
@@ -69,15 +70,19 @@ def get_bpms_coupling_rdts(madx: Madx) -> pd.DataFrame:
     return coupling_via_cmatrix(twiss_tfs, complex_columns=False, output=["rdts"])
 
 
+def apply_dpsi_to_arc_quads(madx: Madx, tilt_std: float = 0.0) -> None:
+    """Apply a the provided stdev as a TGAUSS(2.5) to all LHC quads in the machine."""
+    madx.command.select(flag="error", clear=True)
+    madx.command.select(flag="error", pattern=r"^MQ\.")
+    madx.command.ealign(dpsi=f"{tilt_std} * TGAUSS(2.5)")
+    madx.command.etable(table="quad_errors")  # save errors in table
+    madx.select(flag="error", clear=True)  # cleanup the flag
+
+
 # ----- Simulation ----- #
 
 
-def do_beam_1(
-    tilt_std: float = 0.0,
-    quadrupoles: List[int] = list(range(1, 11)),
-    opticsfile: str = "opticsfile.22",
-    temp_file: str = None,
-) -> Tuple[tfs.TfsDataFrame, tfs.TfsDataFrame]:
+def do_beam_1(tilt_std: float = 0.0, opticsfile: str = "opticsfile.22") -> Tuple[tfs.TfsDataFrame, tfs.TfsDataFrame]:
     with Madx(stdout=False) as madxb1:
         # ----- Init ----- #
         logger.info(f"Running B1 with a mean tilt of {tilt_std:.1E}")
@@ -93,31 +98,15 @@ def do_beam_1(
         # Tunes are matched from opticsfile and no modification was made so no need for next line
         # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb1", 62.31, 60.32, 2.0, 2.0, calls=200)
 
-        # ----- Introduce Errors, Twiss and RDTs ----- #
-        errors.misalign_lhc_ir_quadrupoles(
-            madxb1,
-            ips=[1, 2, 5, 8],
-            beam=1,
-            quadrupoles=quadrupoles,
-            sides="RL",
-            dpsi=f"{tilt_std} * TGAUSS(2.5)",
-            table="ir_quads_errors_b1",
-        )
+        # # ----- Introduce Errors, Twiss and RDTs ----- #
+        logger.debug(f"Introducing tilts in arc quadrupoles")
+        apply_dpsi_to_arc_quads(madxb1, tilt_std=tilt_std)
         coupling_rdts_b1 = get_bpms_coupling_rdts(madxb1)
-        known_errors_b1 = utils.get_table_tfs(madxb1, table_name="ir_quads_errors_b1").set_index("NAME")
-        madxb1.command.select(flag="ERROR", pattern="^MQX[AB]\..*")  # common triplets, regex understood by MAD-X
-        madxb1.command.esave(file=temp_file)
+        known_errors_b1 = utils.get_table_tfs(madxb1, table_name="quad_errors").set_index("NAME")
     return coupling_rdts_b1, known_errors_b1
 
 
-def do_beam_2(
-    tilt_std: float = 0.0,
-    quadrupoles: List[int] = list(range(1, 11)),
-    opticsfile: str = "opticsfile.22",
-    temp_file: str = None,
-) -> Tuple[tfs.TfsDataFrame, tfs.TfsDataFrame]:
-    b2_quadrupoles = [num for num in quadrupoles if num not in (1, 2, 3)]  # keep same but without triplets
-
+def do_beam_2(tilt_std: float = 0.0, opticsfile: str = "opticsfile.22") -> Tuple[tfs.TfsDataFrame, tfs.TfsDataFrame]:
     with Madx(stdout=False) as madxb2:
         # ----- Init ----- #
         logger.info(f"Running B2 with a mean tilt of {tilt_std:.1E}")
@@ -131,42 +120,25 @@ def do_beam_2(
         lhc.make_lhc_beams(madxb2, energy=7000, emittance=3.75e-6)
         madxb2.command.use(sequence="lhcb2")
         # Tunes are matched from opticsfile and no modification was made so no need for next line
-        # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb2, 62.31, 60.32, 2.0, 2.0, calls=200)
+        # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb2", 62.31, 60.32, 2.0, 2.0, calls=200)
 
-        # ----- Introduce Errors to Common Magnets ----- #
-        madxb2.command.readtable(file=temp_file, table="common_errors")
-        madxb2.command.seterr(table="common_errors")
-
-        # ----- Introduce Errors to Other IR Quadrupoles, Twiss and RDTs ----- #
-        errors.misalign_lhc_ir_quadrupoles(
-            madxb2,
-            ips=[1, 2, 5, 8],
-            beam=2,
-            quadrupoles=b2_quadrupoles,
-            sides="RL",
-            dpsi=f"{tilt_std} * TGAUSS(2.5)",
-            table="ir_quads_errors_b2",
-        )
+        # # ----- Introduce Errors, Twiss and RDTs ----- #
+        logger.debug(f"Introducing tilts in arc quadrupoles")
+        apply_dpsi_to_arc_quads(madxb2, tilt_std=tilt_std)
         coupling_rdts_b2 = get_bpms_coupling_rdts(madxb2)
-        known_errors_b2 = utils.get_table_tfs(madxb2, table_name="ir_quads_errors_b2").set_index("NAME")  # no triplets
+        known_errors_b2 = utils.get_table_tfs(madxb2, table_name="quad_errors").set_index("NAME")
     return coupling_rdts_b2, known_errors_b2
 
 
-def make_simulation(
-    tilt_std: float = 0.0,
-    quadrupoles: List[int] = list(range(1, 11)),
-    opticsfile: str = "opticsfile.22",
-) -> ScenarioResult:
+def make_simulation(tilt_std: float = 0.0, opticsfile: str = "opticsfile.22") -> ScenarioResult:
     """
-    Get a complete LHC setup, implement coupling sources as tilt errors in the desired IR quadrupoles. The
+    Get a complete LHC setup, implement coupling sources as tilt errors in the arc IR quadrupoles. The
     coupling RDTs are calculated from a Twiss call at monitor elements throughout the machine, through a
     CMatrix approach.
 
     Args:
         tilt_std (float): standard dev of the dpsi tilt distribution when applying to quadrupoles. To be
             provided throught the command line arguments.
-        quadrupoles (List[int]) the list of quadrupoles to apply errors to. Defaults to all IR quads (applied
-            on both sides of IP), to be provided throught the command line arguments.
         opticsfile (str): name of the optics configuration file to use. Defaults to **opticsfile.22**.
 
     Returns:
@@ -175,16 +147,10 @@ def make_simulation(
         is for all errors of B1, then all errors of B2 without the triplets (common to both beams and already
         present in the B1 information) in a single dataframe.
     """
-    temp_file = str(uuid4()) + ".tfs"
     try:
-        rdts_b1, errors_b1 = do_beam_1(
-            tilt_std=tilt_std, quadrupoles=quadrupoles, opticsfile=opticsfile, temp_file=temp_file
-        )
+        rdts_b1, errors_b1 = do_beam_1(tilt_std=tilt_std, opticsfile=opticsfile)
         time.sleep(0.5)
-        rdts_b2, errors_b2 = do_beam_2(
-            tilt_std=tilt_std, quadrupoles=quadrupoles, opticsfile=opticsfile, temp_file=temp_file
-        )
-        Path(temp_file).unlink(missing_ok=False)
+        rdts_b2, errors_b2 = do_beam_2(tilt_std=tilt_std, opticsfile=opticsfile)
 
         coupling_rdts = pd.concat([rdts_b1, rdts_b2])
         known_errors = pd.concat([errors_b1, errors_b2])
@@ -193,7 +159,6 @@ def make_simulation(
         result = ScenarioResult(tilt=tilt_std, coupling_rdts=coupling_rdts, error_table=known_errors)
     except:
         result = 1  # will be used for filtering later
-        Path(temp_file).unlink(missing_ok=False)
     return result
 
 
@@ -237,7 +202,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[pd.
     required=True,
     default=0,
     show_default=True,
-    help="Standard dev of the dpsi tilt distribution applied to IR quadrupoles",
+    help="Standard dev of the dpsi tilt distribution applied to arc quadrupoles",
 )
 @click.option(
     "--n_batches",
@@ -249,7 +214,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[pd.
 )
 @click.option(
     "--outputdir",
-    type=click.Path(resolve_path=True, path_type=Path),
+    type=click.Path(resolve_path=True, path_type=Path, file_okay=False, writable=True),
     required=True,
     help="Output directory in which to write the training data files.",
 )
@@ -272,15 +237,15 @@ def main(tilt_std: float, n_batches: int, outputdir: Path, returns: str) -> None
     ml_inputs, ml_outputs = gather_batches(tilt_std=tilt_std, n_batches=n_batches)
 
     if returns in ("pandas", "both"):
-        with (outputdir / f"{n_batches:d}_sims_ir_sources_inputs.pkl").open("wb") as file:
+        with (outputdir / f"{n_batches:d}_sims_arc_sources_inputs.pkl").open("wb") as file:
             pickle.dump(ml_inputs, file)
-        with (outputdir / f"{n_batches:d}_sims_ir_sources_outputs.pkl").open("wb") as file:
+        with (outputdir / f"{n_batches:d}_sims_arc_sources_outputs.pkl").open("wb") as file:
             pickle.dump(ml_outputs, file)
     if returns in ("numpy", "both"):
         ml_inputs = [np.hstack(res.to_numpy()) for res in ml_inputs]
         ml_outputs = [res.DPSI.to_numpy() for res in ml_outputs]
-        np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npz", ml_inputs)
-        np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npz", ml_outputs)
+        np.savez(outputdir / f"{n_batches:d}_sims_arc_sources_inputs.npz", ml_inputs)
+        np.savez(outputdir / f"{n_batches:d}_sims_arc_sources_outputs.npz", ml_outputs)
 
 
 if __name__ == "__main__":
