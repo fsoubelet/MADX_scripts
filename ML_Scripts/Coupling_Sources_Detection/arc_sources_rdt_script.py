@@ -23,10 +23,9 @@ import time
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import click
-import cpymad
 import numpy as np
 import pandas as pd
 import tfs
@@ -36,9 +35,7 @@ from joblib import Parallel, delayed
 from loguru import logger
 from optics_functions.coupling import coupling_via_cmatrix
 
-import pyhdtoolkit
-
-from pyhdtoolkit.cpymadtools import errors, lhc, matching, twiss, utils
+from pyhdtoolkit.cpymadtools import lhc, twiss, utils
 from pyhdtoolkit.cpymadtools.constants import MONITOR_TWISS_COLUMNS
 from pyhdtoolkit.utils import defaults
 from pyhdtoolkit.utils._misc import call_lhc_sequence_and_optics, log_runtime_versions
