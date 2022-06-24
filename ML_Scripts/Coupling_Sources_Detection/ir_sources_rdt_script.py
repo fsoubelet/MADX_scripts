@@ -134,8 +134,11 @@ def do_beam_2(
         # matching.match_tunes_and_chromaticities(madx, "lhc", "lhcb2, 62.31, 60.32, 2.0, 2.0, calls=200)
 
         # ----- Introduce Errors to Common Magnets ----- #
-        madxb2.command.readtable(file=temp_file, table="common_errors")
-        madxb2.command.seterr(table="common_errors")
+        # Only done if one of Q1, Q2 or Q3 is in the quadrupoles list, otherwise the error
+        # file will not havebeen exported from the beam 1 simulation and this would fail
+        if any(x in quadrupoles for x in (1, 2, 3)):
+            madxb2.command.readtable(file=temp_file, table="common_errors")
+            madxb2.command.seterr(table="common_errors")
 
         # ----- Introduce Errors to Other IR Quadrupoles, Twiss and RDTs ----- #
         errors.misalign_lhc_ir_quadrupoles(
@@ -184,7 +187,7 @@ def make_simulation(
         rdts_b2, errors_b2 = do_beam_2(
             tilt_std=tilt_std, quadrupoles=quadrupoles, opticsfile=opticsfile, temp_file=temp_file
         )
-        Path(temp_file).unlink(missing_ok=False)
+        Path(temp_file).unlink(missing_ok=True)
 
         coupling_rdts = pd.concat([rdts_b1, rdts_b2])
         known_errors = pd.concat([errors_b1, errors_b2])

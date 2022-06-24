@@ -146,7 +146,7 @@ def make_simulation(tilt_std: float = 0.0, opticsfile: str = "opticsfile.22") ->
     """
     try:
         rdts_b1, errors_b1 = do_beam_1(tilt_std=tilt_std, opticsfile=opticsfile)
-        time.sleep(0.5)
+        time.sleep(1)
         rdts_b2, errors_b2 = do_beam_2(tilt_std=tilt_std, opticsfile=opticsfile)
 
         coupling_rdts = pd.concat([rdts_b1, rdts_b2])
@@ -174,7 +174,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[pd.
     """
     # Using Joblib's threading backend as computation happens in MAD-X who releases the GIL
     # Also because cpymad itself uses theads and a multiprocessing backend would refuse that
-    n_threads = int(multiprocessing.cpu_count()) - 2
+    n_threads = int(2 * multiprocessing.cpu_count() / 3)
 
     # ----- Run simulations concurrently ----- #
     logger.info(f"Computing using Joblib's 'threading' backing, with {n_threads} threads")
