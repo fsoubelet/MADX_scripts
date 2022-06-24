@@ -19,9 +19,11 @@ import pandas as pd
 
 from loguru import logger
 from rich.progress import track
+from rich.traceback import install as install_rich_traceback
 
 RNG = np.random.default_rng()
 IR_BPM_REGEX = r"BPM\S?\S?\.[0-{max_index}][LR][1258]\.*"
+install_rich_traceback(show_locals=False)
 
 # ----- Utilities ----- #
 

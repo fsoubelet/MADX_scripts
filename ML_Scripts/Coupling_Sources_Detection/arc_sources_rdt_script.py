@@ -34,6 +34,7 @@ from cpymad.madx import Madx
 from joblib import Parallel, delayed
 from loguru import logger
 from optics_functions.coupling import coupling_via_cmatrix
+from rich.traceback import install as install_rich_traceback
 
 from pyhdtoolkit.cpymadtools import lhc, twiss, utils
 from pyhdtoolkit.cpymadtools.constants import MONITOR_TWISS_COLUMNS
@@ -43,6 +44,7 @@ from pyhdtoolkit.utils._misc import call_lhc_sequence_and_optics, log_runtime_ve
 # ----- Setup ----- #
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
+install_rich_traceback(show_locals=False)
 
 # ----- Utilities ----- #
 
