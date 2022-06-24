@@ -198,7 +198,7 @@ def make_simulation(
         result = ScenarioResult(tilt=tilt_std, coupling_rdts=coupling_rdts, error_table=known_errors)
     except:
         result = 1  # will be used for filtering later
-        Path(temp_file).unlink(missing_ok=False)
+        Path(temp_file).unlink(missing_ok=True)
     return result
 
 
