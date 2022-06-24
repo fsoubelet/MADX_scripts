@@ -56,6 +56,21 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
         df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
 
 
+# ----- Concatenation Helpers ----- #
+
+
+def _stack_rdts_df_to_numpy_array(df: pd.DataFrame) -> np.ndarray:
+    """
+    Converts the coupling RDTs dataframe from the `ScenarioResult` with
+    RDTs components columns to a numpy array. The output is a one-dimentional
+    ndarray with all the BPM values for F1001REAL, then all for F1001IMAG,
+    then all F1010REAL and finally all for F1010IMAG.
+    """
+    return np.concatenate(
+        (df.F1001REAL.to_numpy(), df.F1001IMAG.to_numpy(), df.F1010REAL.to_numpy(), df.F1010IMAG.to_numpy())
+    )
+
+
 # ----- Running ----- #
 
 
@@ -112,17 +127,3 @@ def main(input: Path, max_ir_number: int, ir_stdev: float, arc_stdev: float) -> 
 
 if __name__ == "__main__":
     main()
-
-# ----- Concatenation Helpers ----- #
-
-
-def _stack_rdts_df_to_numpy_array(df: pd.DataFrame) -> np.ndarray:
-    """
-    Converts the coupling RDTs dataframe from the `ScenarioResult` with
-    RDTs components columns to a numpy array. The output is a one-dimentional
-    ndarray with all the BPM values for F1001REAL, then all for F1001IMAG,
-    then all F1010REAL and finally all for F1010IMAG.
-    """
-    return np.concatenate(
-        (df.F1001REAL.to_numpy(), df.F1001IMAG.to_numpy(), df.F1010REAL.to_numpy(), df.F1010IMAG.to_numpy())
-    )
