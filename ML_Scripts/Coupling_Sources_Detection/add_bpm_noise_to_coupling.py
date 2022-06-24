@@ -23,7 +23,7 @@ from rich.traceback import install as install_rich_traceback
 
 RNG = np.random.default_rng()
 IR_BPM_REGEX = r"BPM\S?\S?\.[0-{max_index}][LR][1258]\.*"
-install_rich_traceback(show_locals=False)
+install_rich_traceback(show_locals=False, word_wrap=True)
 
 # ----- Utilities ----- #
 

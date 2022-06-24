@@ -44,7 +44,7 @@ from pyhdtoolkit.utils._misc import call_lhc_sequence_and_optics, log_runtime_ve
 # ----- Setup ----- #
 
 defaults.config_logger(level="WARNING", enqueue=True)  # goes to stdout
-install_rich_traceback(show_locals=False)
+install_rich_traceback(show_locals=False, word_wrap=True)
 
 # ----- Utilities ----- #
 
@@ -194,26 +194,25 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[pd.
 # ----- Concatenation Helpers ----- #
 
 
-def _stack_result_rdts_df_to_numpy_array(result: ScenarioResult) -> np.ndarray:
+def _stack_result_rdts_df_to_numpy_array(df: pd.DataFrame) -> np.ndarray:
     """
     Converts the coupling RDTs dataframe from the `ScenarioResult` with
     RDTs components columns to a numpy array. The output is a one-dimentional
     ndarray with all the BPM values for F1001REAL, then all for F1001IMAG,
     then all F1010REAL and finally all for F1010IMAG.
     """
-    df = result.coupling_rdts
     return np.concatenate(
         (df.F1001REAL.to_numpy(), df.F1001IMAG.to_numpy(), df.F1010REAL.to_numpy(), df.F1010IMAG.to_numpy())
     )
 
 
-def _stack_dpsi_errors_to_numpy_array(result: ScenarioResult) -> np.ndarray:
+def _stack_dpsi_errors_to_numpy_array(df: pd.DataFrame) -> np.ndarray:
     """
     Converts the tilt errors dataframe from the `ScenarioResult` to a numpy
     array, only selecting the DPSI column. The array corresponds to the DPSI
     value at each affected quadrupole.
     """
-    return result.error_table.DPSI.to_numpy()
+    return df.DPSI.to_numpy()
 
 
 # ----- Running ----- #
@@ -267,8 +266,8 @@ def main(tilt_std: float, n_batches: int, outputdir: Path, returns: str) -> None
         with (outputdir / f"{n_batches:d}_sims_arc_sources_outputs.pkl").open("wb") as file:
             pickle.dump(ml_outputs, file)
     if returns in ("numpy", "both"):
-        ml_inputs: List[np.ndarray] = [_stack_result_rdts_df_to_numpy_array(res) for res in ml_inputs]
-        ml_outputs: List[np.ndarray] = [_stack_dpsi_errors_to_numpy_array(res) for res in ml_outputs]
+        ml_inputs: List[np.ndarray] = [_stack_result_rdts_df_to_numpy_array(df) for df in ml_inputs]
+        ml_outputs: List[np.ndarray] = [_stack_dpsi_errors_to_numpy_array(df) for df in ml_outputs]
         np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_inputs.npz", ml_inputs)
         np.savez(outputdir / f"{n_batches:d}_sims_ir_sources_outputs.npz", ml_outputs)
 
