@@ -8,6 +8,7 @@ Example use:
 python add_bpm_noise_to_coupling.py --input <your_file> --max_ir_number=6 --ir_stdev=1e-2 --arc_stdev=5e-4
 """
 import pickle
+
 from logging import log
 from pathlib import Path
 from typing import List, Match
@@ -15,6 +16,7 @@ from typing import List, Match
 import click
 import numpy as np
 import pandas as pd
+
 from loguru import logger
 from rich.progress import track
 
@@ -36,9 +38,7 @@ def add_noise_to_ir_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][df.index.str.match(ir_bpms, case=False)] += RNG.normal(
-            0, stdev, array_length
-        )
+        df[column][df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
 
 
 def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> None:
@@ -53,9 +53,7 @@ def add_noise_to_arc_bpms(df: pd.DataFrame, max_index: int, stdev: float) -> Non
 
     for column in df.columns:
         logger.trace(f"Adding noise to column {column}")
-        df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(
-            0, stdev, array_length
-        )
+        df[column][~df.index.str.match(ir_bpms, case=False)] += RNG.normal(0, stdev, array_length)
 
 
 # ----- Running ----- #
@@ -106,13 +104,25 @@ def main(input: Path, max_ir_number: int, ir_stdev: float, arc_stdev: float) -> 
         add_noise_to_ir_bpms(dataframe, max_ir_number, ir_stdev)
         add_noise_to_arc_bpms(dataframe, max_ir_number, arc_stdev)
 
-    output_file = input.with_stem(input.stem + "_noised").with_suffix(
-        ".npz"
-    )  # type: Path
+    output_file = input.with_stem(input.stem + "_noised").with_suffix(".npz")  # type: Path
     logger.info(f"Stacking dataframes and exporting to '{output_file}'")
-    data_stacked = [np.hstack(df.to_numpy()) for df in data]
+    data_stacked = [_stack_rdts_df_to_numpy_array(df) for df in data]
     np.savez(output_file, data_stacked)
 
 
 if __name__ == "__main__":
     main()
+
+# ----- Concatenation Helpers ----- #
+
+
+def _stack_rdts_df_to_numpy_array(df: pd.DataFrame) -> np.ndarray:
+    """
+    Converts the coupling RDTs dataframe from the `ScenarioResult` with
+    RDTs components columns to a numpy array. The output is a one-dimentional
+    ndarray with all the BPM values for F1001REAL, then all for F1001IMAG,
+    then all F1010REAL and finally all for F1010IMAG.
+    """
+    return np.concatenate(
+        (df.F1001REAL.to_numpy(), df.F1001IMAG.to_numpy(), df.F1010REAL.to_numpy(), df.F1010IMAG.to_numpy())
+    )
