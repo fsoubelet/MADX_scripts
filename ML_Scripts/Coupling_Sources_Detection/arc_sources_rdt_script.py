@@ -187,7 +187,7 @@ def gather_batches(tilt_std: float = 0.0, n_batches: int = 50) -> Tuple[List[pd.
     )
     results: List[ScenarioResult] = [res for res in results if isinstance(res, ScenarioResult)]
     inputs: List[tfs.TfsDataFrame] = [res.coupling_rdts for res in results]
-    outputs: List[tfs.TfsDataFrame] = [res.error_table for res in results]
+    outputs: List[tfs.TfsDataFrame] = [res.error_table.DPSI.to_frame() for res in results]  # only keep non-zero column!
     return inputs, outputs
 
 
